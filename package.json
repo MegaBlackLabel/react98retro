@@ -1,11 +1,43 @@
 {
-  "name": "react98retro",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@megablacklabel/react98retro",
+  "version": "0.1.0",
+  "description": "Windows 98 UI component library for React",
   "type": "module",
+  "main": "./dist/react98retro.umd.cjs",
+  "module": "./dist/react98retro.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/react98retro.js",
+      "require": "./dist/react98retro.umd.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "keywords": [
+    "react",
+    "windows98",
+    "98.css",
+    "ui",
+    "component-library",
+    "retro"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MegaBlackLabel/react98retro.git"
+  },
+  "homepage": "https://megablacklabel.github.io/react98retro/",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:lib": "tsc -b && vite build --config vite.lib.config.ts",
     "lint": "eslint .",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
@@ -14,11 +46,13 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
   "dependencies": {
     "98.css": "^0.1.21",
-    "clsx": "^2.1.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "clsx": "^2.1.1"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.2",
@@ -45,10 +79,13 @@
     "globals": "^17.4.0",
     "jsdom": "^29.0.1",
     "playwright": "^1.58.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "storybook": "^10.3.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^8.0.1",
+    "vite-plugin-dts": "3",
     "vitest": "^4.1.0"
   }
 }
