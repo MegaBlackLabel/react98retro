@@ -1,6 +1,9 @@
 export { FieldRow } from './FieldRow';
 export type { FieldRowProps } from './FieldRow';
 
+export { Win98Provider } from './Win98Provider';
+export type { Win98ProviderProps } from './Win98Provider';
+
 export { TitleBar } from './window';
 export type { TitleBarProps } from './window';
 
