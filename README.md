@@ -6,6 +6,8 @@ React で Windows 98 のコンポーネントを実装しました。
 
 98.css をベースに React コンポーネントライブラリを構築し、ドラッグ・リサイズ可能なウィンドウ上で Windows 98 風のファイルエクスプローラーを動作させることを目標としたプロジェクトです。
 
+🌐 **[デモを見る → https://megablacklabel.github.io/react98retro/](https://megablacklabel.github.io/react98retro/)**
+
 ## スクリーンショット
 
 ![Windows 98 ファイルエクスプローラー](./image/screenshot.png)
