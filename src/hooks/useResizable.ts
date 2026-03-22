@@ -30,6 +30,9 @@ export function useResizable(options?: {
   initialY?: number;
   minWidth?: number;
   minHeight?: number;
+  /** 外部から位置を渡す場合 (Window.tsx の単一 position state を共有) */
+  position?: { x: number; y: number };
+  onPositionChange?: (pos: { x: number; y: number }) => void;
 }): UseResizableResult {
   const minWidth = options?.minWidth ?? 200;
   const minHeight = options?.minHeight ?? 100;
@@ -38,10 +41,14 @@ export function useResizable(options?: {
     width: options?.initialWidth ?? 400,
     height: options?.initialHeight ?? 300,
   });
-  const [position, setPosition] = useState({
+  const [internalPosition, setInternalPosition] = useState({
     x: options?.initialX ?? 50,
     y: options?.initialY ?? 50,
   });
+
+  // 外部 state が渡されていればそちらを使う
+  const position = options?.position ?? internalPosition;
+  const setPosition = options?.onPositionChange ?? setInternalPosition;
 
   const resizeState = useRef<{
     direction: ResizeDirection;
@@ -54,6 +61,12 @@ export function useResizable(options?: {
     pointerId: number;
     target: Element;
   } | null>(null);
+
+  // 最新の position と size を ref で保持（stale closure 防止）
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -83,7 +96,7 @@ export function useResizable(options?: {
       setSize({ width: newWidth, height: newHeight });
       setPosition({ x: newX, y: newY });
     },
-    [minWidth, minHeight],
+    [minWidth, minHeight, setPosition],
   );
 
   const onPointerUp = useCallback(
@@ -103,14 +116,15 @@ export function useResizable(options?: {
       onPointerDown: (e: React.PointerEvent) => {
         e.stopPropagation();
         e.currentTarget.setPointerCapture(e.pointerId);
+        // positionRef / sizeRef を使うことで常に最新の値をキャプチャ
         resizeState.current = {
           direction,
           startMouseX: e.clientX,
           startMouseY: e.clientY,
-          startWidth: size.width,
-          startHeight: size.height,
-          startX: position.x,
-          startY: position.y,
+          startWidth: sizeRef.current.width,
+          startHeight: sizeRef.current.height,
+          startX: positionRef.current.x,
+          startY: positionRef.current.y,
           pointerId: e.pointerId,
           target: e.currentTarget,
         };
@@ -118,7 +132,7 @@ export function useResizable(options?: {
         window.addEventListener('pointerup', onPointerUp);
       },
     }),
-    [size, position, onPointerMove, onPointerUp],
+    [onPointerMove, onPointerUp],
   );
 
   return { size, position, getResizeHandleProps };

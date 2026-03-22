@@ -53,20 +53,24 @@ export function Window({
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
 
-  const { position: dragPos, dragHandleProps } = useDraggable({
+  // ドラッグ・リサイズで共有する単一ポジション state
+  const [position, setPosition] = useState({ x: initialX, y: initialY });
+
+  const { dragHandleProps } = useDraggable({
     initialX,
     initialY,
+    position,
+    onPositionChange: setPosition,
   });
 
-  const { size, position: resizePos, getResizeHandleProps } = useResizable({
+  const { size, getResizeHandleProps } = useResizable({
     initialWidth: width,
     initialHeight: height,
     initialX,
     initialY,
+    position,
+    onPositionChange: setPosition,
   });
-
-  const currentX = resizePos.x !== initialX ? resizePos.x : dragPos.x;
-  const currentY = resizePos.y !== initialY ? resizePos.y : dragPos.y;
 
   const handleMinimize = () => {
     setIsMinimized((prev) => !prev);
@@ -105,8 +109,8 @@ export function Window({
       }
     : {
         position: 'fixed',
-        top: currentY,
-        left: currentX,
+        top: position.y,
+        left: position.x,
         width: size.width,
         height: size.height,
         zIndex,
