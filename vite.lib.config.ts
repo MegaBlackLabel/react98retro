@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
+import prefixSelector from 'postcss-prefix-selector';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +17,21 @@ export default defineConfig({
       tsconfigPath: './tsconfig.app.json',
     }),
   ],
+  css: {
+    postcss: {
+      plugins: [
+        prefixSelector({
+          prefix: '.win98',
+          transform(prefix, selector, prefixedSelector, filePath) {
+            // 98.css だけスコープ化する。html/body/:root はそのまま
+            if (!filePath.includes('98.css')) return selector;
+            if ([':root', 'html', 'body'].includes(selector)) return selector;
+            return prefixedSelector;
+          },
+        }),
+      ],
+    },
+  },
   build: {
     cssMinify: false,
     lib: {
