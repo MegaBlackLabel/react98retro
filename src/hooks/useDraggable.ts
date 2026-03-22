@@ -50,8 +50,7 @@ export function useDraggable(options?: {
       x: dragState.current.startX + dx,
       y: dragState.current.startY + dy,
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setPosition]);
 
   const onPointerUp = useCallback(
     (e: PointerEvent) => {
