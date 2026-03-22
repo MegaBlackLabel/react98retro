@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+/* Global Storybook styles – Win98 look */
+body,
+.sb-show-main,
+.docs-story {
+  font-family: 'Pixelated MS Sans Serif', 'DotGothic16', 'MS Gothic', 'MS UI Gothic', Arial, sans-serif;
+  font-size: 11px;
+  color: #000000 !important;
+  background: #c0c0c0;
+}
+
+/* Override any Storybook green/default color leaking into components */
+* {
+  color: inherit;
+}

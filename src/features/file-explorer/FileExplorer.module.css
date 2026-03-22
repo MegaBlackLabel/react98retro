@@ -1,0 +1,58 @@
+.explorerBody {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Win98-style sunken groove divider between toolbar bands */
+.groove {
+  height: 0;
+  border-top: 1px solid #808080;
+  border-bottom: 1px solid #ffffff;
+  flex-shrink: 0;
+}
+
+.mainContent {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.leftPane {
+  overflow: auto;
+  flex-shrink: 0;
+  background: #fff;
+  min-width: 60px;
+}
+
+.splitter {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: #c0c0c0;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #ffffff;
+  user-select: none;
+}
+
+.splitter:hover,
+.splitter:active {
+  background: #a0a0a0;
+}
+
+.rightPane {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+  background: #ffffff;
+}
+
+/* Table column header height with 2px top/bottom margin */
+.rightPane :global(table > thead > tr > th) {
+  height: auto !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  line-height: normal !important;
+}

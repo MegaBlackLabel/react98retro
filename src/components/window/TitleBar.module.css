@@ -1,0 +1,30 @@
+/* Override 98.css title-bar to slim down height */
+.titleBar {
+  padding: 2px 2px 2px 3px !important;
+  align-items: center !important;
+  cursor: move !important;
+}
+
+/* Constrain title bar text line-height so it doesn't expand the bar */
+.titleBar :global(.title-bar-text) {
+  margin-right: 0 !important;
+  line-height: 14px;
+}
+
+/* Constrain title-bar-controls buttons to exact size */
+.titleBar :global(.title-bar-controls) button {
+  width: 16px !important;
+  height: 14px !important;
+  min-width: 16px !important;
+  min-height: 14px !important;
+  cursor: pointer !important;
+}
+
+.titleBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}

@@ -1,0 +1,22 @@
+.resizeHandle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+}
+
+.resizeHandle:hover,
+.resizeHandle:active {
+  background: #000080;
+  opacity: 0.3;
+}
+
+th {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}

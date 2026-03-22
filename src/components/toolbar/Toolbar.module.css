@@ -1,0 +1,136 @@
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 1px 2px;
+  gap: 1px;
+  background: #c0c0c0;
+  position: relative;
+}
+
+/* Win98-style stipple grip – tiny 3D raised bumps */
+.grip {
+  width: 6px;
+  align-self: stretch;
+  flex-shrink: 0;
+  margin: 2px 4px 2px 1px;
+  background-color: #c0c0c0;
+  background-image:
+    radial-gradient(circle at 0.5px 0.5px, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 0.5px 0.5px, #808080 0.5px, transparent 0.5px);
+  background-size: 2px 2px;
+  background-position: 0px 0px, 1px 1px;
+}
+
+.toolbarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  cursor: default;
+  position: relative;
+  flex-shrink: 0;
+  background: #c0c0c0;
+  border: 1px solid transparent;
+  appearance: none;
+  box-sizing: border-box;
+  /* Override 98.css button raised box-shadow */
+  box-shadow: none !important;
+}
+
+/* Split button: icon + caret as a pair */
+.splitButtonGroup {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ▼ only dropdown button — half width */
+.toolbarButtonCaret {
+  width: 12px !important;
+}
+.toolbarButton:hover:not(:disabled) {
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: none !important;
+}
+
+.toolbarButton:active:not(:disabled),
+.toolbarButtonPressed {
+  border: 1px solid;
+  border-color: #808080 #ffffff #ffffff #808080;
+  box-shadow: none !important;
+}
+
+.toolbarButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.separator {
+  width: 1px;
+  height: 18px;
+  background: #808080;
+  border-right: 1px solid #ffffff;
+  margin: 0 3px;
+  flex-shrink: 0;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffe1;
+  border: 1px solid #000000;
+  padding: 1px 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Dropdown item inside toolbar dropdown */
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  padding: 3px 16px;
+  font-size: 11px;
+  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.dropdownItem:hover {
+  background-color: #000080;
+  color: #ffffff;
+}
+
+/* Dropdown panel for toolbar dropdown buttons */
+.dropdownPanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #c0c0c0;
+  border: 1px solid;
+  border-color: #ffffff #808080 #808080 #ffffff;
+  box-shadow: 1px 1px 0 #000000;
+  min-width: 100px;
+  z-index: 9999;
+  padding: 2px;
+}
+
+.dropdownCaret {
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}

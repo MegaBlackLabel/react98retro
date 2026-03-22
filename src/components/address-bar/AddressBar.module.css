@@ -1,0 +1,40 @@
+.addressBar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 4px 2px 0;
+  gap: 4px;
+  background: #c0c0c0;
+}
+
+/* Win98-style stipple grip – tiny 3D raised bumps */
+.grip {
+  width: 6px;
+  align-self: stretch;
+  flex-shrink: 0;
+  margin: 2px 4px 2px 3px;
+  background-color: #c0c0c0;
+  background-image:
+    radial-gradient(circle at 0.5px 0.5px, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 0.5px 0.5px, #808080 0.5px, transparent 0.5px);
+  background-size: 2px 2px;
+  background-position: 0px 0px, 1px 1px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #000000;
+}
+
+.select {
+  flex: 1;
+  height: 20px;
+  min-width: 0;
+  font-size: 11px;
+  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  box-sizing: border-box;
+}

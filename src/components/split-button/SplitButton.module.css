@@ -1,0 +1,62 @@
+/* SplitButton – shares visual style with toolbar buttons */
+.splitButtonGroup {
+  display: inline-flex;
+  flex-direction: row;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 0;
+  padding: 0;
+  cursor: default;
+  position: relative;
+  flex-shrink: 0;
+  background: #c0c0c0;
+  border: 1px solid transparent;
+  appearance: none;
+  box-sizing: border-box;
+  box-shadow: none;
+  font-family: 'Pixelated MS Sans Serif', 'DotGothic16', Arial, sans-serif;
+  font-size: 11px;
+  color: #000000;
+}
+
+.button:hover:not(:disabled) {
+  border-color: #ffffff #808080 #808080 #ffffff;
+}
+
+.button:active:not(:disabled),
+.buttonPressed {
+  border-color: #808080 #ffffff #ffffff #808080;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ▼ only caret button – half width */
+.caretButton {
+  width: 12px;
+}
+
+.caret {
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.menuWrapper {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 9999;
+}
