@@ -47,8 +47,47 @@ bun run storybook
 # テスト実行
 bun run test
 
-# ビルド
+# ビルド（デモアプリ）
 bun run build
+
+# ビルド（ライブラリ）
+bun run build:lib
+```
+
+## パッケージとして使う
+
+このライブラリは [GitHub Packages](https://github.com/MegaBlackLabel/react98retro/packages) として公開されています。
+
+### 1. `.npmrc` にレジストリを追加
+
+プロジェクトルートの `.npmrc` に以下を追記してください。
+
+```
+@megablacklabel:registry=https://npm.pkg.github.com
+```
+
+### 2. インストール
+
+```bash
+npm install @megablacklabel/react98retro
+# または
+bun add @megablacklabel/react98retro
+```
+
+### 3. 使い方
+
+```tsx
+import { Window, Button, MenuBar } from '@megablacklabel/react98retro';
+import '@megablacklabel/react98retro/style.css';
+
+function App() {
+  return (
+    <Window title="My App" width={400} height={300} initialX={50} initialY={50}>
+      <p>Hello, Windows 98!</p>
+      <Button>OK</Button>
+    </Window>
+  );
+}
 ```
 
 ## アイコンについて
