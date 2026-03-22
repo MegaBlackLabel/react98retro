@@ -16,11 +16,18 @@ export interface UseDraggableResult {
 export function useDraggable(options?: {
   initialX?: number;
   initialY?: number;
+  /** 外部から位置を渡す場合 (Window.tsx の単一 position state を共有) */
+  position?: DraggablePosition;
+  onPositionChange?: (pos: DraggablePosition) => void;
 }): UseDraggableResult {
-  const [position, setPosition] = useState<DraggablePosition>({
+  const [internalPosition, setInternalPosition] = useState<DraggablePosition>({
     x: options?.initialX ?? 50,
     y: options?.initialY ?? 50,
   });
+
+  // 外部 state が渡されていればそちらを使う
+  const position = options?.position ?? internalPosition;
+  const setPosition = options?.onPositionChange ?? setInternalPosition;
 
   const dragState = useRef<{
     startMouseX: number;
@@ -31,6 +38,10 @@ export function useDraggable(options?: {
     target: Element;
   } | null>(null);
 
+  // 最新の position を ref で保持（stale closure 防止）
+  const positionRef = useRef(position);
+  positionRef.current = position;
+
   const onPointerMove = useCallback((e: PointerEvent) => {
     if (!dragState.current || e.pointerId !== dragState.current.pointerId) return;
     const dx = e.clientX - dragState.current.startMouseX;
@@ -39,6 +50,7 @@ export function useDraggable(options?: {
       x: dragState.current.startX + dx,
       y: dragState.current.startY + dy,
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPointerUp = useCallback(
@@ -57,18 +69,19 @@ export function useDraggable(options?: {
       // ボタンをクリックした場合はドラッグを開始しない
       if ((e.target as Element).closest('button')) return;
       e.currentTarget.setPointerCapture(e.pointerId);
+      // positionRef.current を使うことでリサイズ後の実際の位置から正しくドラッグ開始できる
       dragState.current = {
         startMouseX: e.clientX,
         startMouseY: e.clientY,
-        startX: position.x,
-        startY: position.y,
+        startX: positionRef.current.x,
+        startY: positionRef.current.y,
         pointerId: e.pointerId,
         target: e.currentTarget,
       };
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
     },
-    [position, onPointerMove, onPointerUp],
+    [onPointerMove, onPointerUp],
   );
 
   return {
