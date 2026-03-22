@@ -73,9 +73,9 @@
 }
 
 .separator {
-  width: 1px;
+  width: 0;
   height: 18px;
-  background: #808080;
+  border-left: 1px solid #808080;
   border-right: 1px solid #ffffff;
   margin: 0 3px;
   flex-shrink: 0;
