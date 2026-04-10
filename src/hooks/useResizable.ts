@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
 export type ResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
@@ -23,6 +23,31 @@ export interface UseResizableResult {
   };
 }
 
+function clampToViewport(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): { x: number; y: number; width: number; height: number } {
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+
+  // Clamp size to viewport
+  const clampedWidth = Math.min(width, viewportWidth);
+  const clampedHeight = Math.min(height, viewportHeight);
+
+  // Clamp position so window stays within viewport
+  const maxX = Math.max(0, viewportWidth - clampedWidth);
+  const maxY = Math.max(0, viewportHeight - clampedHeight);
+
+  return {
+    x: Math.max(0, Math.min(x, maxX)),
+    y: Math.max(0, Math.min(y, maxY)),
+    width: clampedWidth,
+    height: clampedHeight,
+  };
+}
+
 export function useResizable(options?: {
   initialWidth?: number;
   initialHeight?: number;
@@ -33,22 +58,71 @@ export function useResizable(options?: {
   /** 外部から位置を渡す場合 (Window.tsx の単一 position state を共有) */
   position?: { x: number; y: number };
   onPositionChange?: (pos: { x: number; y: number }) => void;
+  /** ビューポート内に収める */
+  clampToViewport?: boolean;
+  /** ビューポートリサイズ時に位置とサイズを再調整する（clampToViewport と共に使用） */
+  reconcileOnResize?: boolean;
 }): UseResizableResult {
   const minWidth = options?.minWidth ?? 200;
   const minHeight = options?.minHeight ?? 100;
+  const clampToViewportEnabled = options?.clampToViewport ?? false;
+  const reconcileOnResize = options?.reconcileOnResize ?? false;
+
+  // Calculate initial size and position, clamped to viewport if enabled
+  const initialValues = useMemo(() => {
+    const rawWidth = options?.initialWidth ?? 400;
+    const rawHeight = options?.initialHeight ?? 300;
+    const rawX = options?.initialX ?? 50;
+    const rawY = options?.initialY ?? 50;
+
+    if (clampToViewportEnabled) {
+      return clampToViewport(rawX, rawY, rawWidth, rawHeight);
+    }
+
+    return { x: rawX, y: rawY, width: rawWidth, height: rawHeight };
+  }, [
+    options?.initialWidth,
+    options?.initialHeight,
+    options?.initialX,
+    options?.initialY,
+    clampToViewportEnabled,
+  ]);
 
   const [size, setSize] = useState({
-    width: options?.initialWidth ?? 400,
-    height: options?.initialHeight ?? 300,
+    width: initialValues.width,
+    height: initialValues.height,
   });
   const [internalPosition, setInternalPosition] = useState({
-    x: options?.initialX ?? 50,
-    y: options?.initialY ?? 50,
+    x: initialValues.x,
+    y: initialValues.y,
   });
 
   // 外部 state が渡されていればそちらを使う
   const position = options?.position ?? internalPosition;
   const setPosition = options?.onPositionChange ?? setInternalPosition;
+
+  // Post-mount viewport resize handling - only when BOTH flags are enabled
+  useEffect(() => {
+    if (!reconcileOnResize || !clampToViewportEnabled) return;
+
+    const handleResize = () => {
+      const clamped = clampToViewport(position.x, position.y, size.width, size.height);
+      
+      // Only update if something actually changed
+      if (
+        clamped.x !== position.x ||
+        clamped.y !== position.y ||
+        clamped.width !== size.width ||
+        clamped.height !== size.height
+      ) {
+        setSize({ width: clamped.width, height: clamped.height });
+        setPosition({ x: clamped.x, y: clamped.y });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [reconcileOnResize, clampToViewportEnabled, position, size, setPosition]);
 
   const resizeState = useRef<{
     direction: ResizeDirection;
@@ -93,10 +167,17 @@ export function useResizable(options?: {
         newY = startY + startHeight - newHeight;
       }
 
-      setSize({ width: newWidth, height: newHeight });
-      setPosition({ x: newX, y: newY });
+      // Clamp to viewport if enabled
+      if (clampToViewportEnabled) {
+        const clamped = clampToViewport(newX, newY, newWidth, newHeight);
+        setSize({ width: clamped.width, height: clamped.height });
+        setPosition({ x: clamped.x, y: clamped.y });
+      } else {
+        setSize({ width: newWidth, height: newHeight });
+        setPosition({ x: newX, y: newY });
+      }
     },
-    [minWidth, minHeight, setPosition],
+    [minWidth, minHeight, setPosition, clampToViewportEnabled],
   );
 
   const onPointerUp = useCallback(
