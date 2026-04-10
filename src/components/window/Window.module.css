@@ -44,3 +44,15 @@
       transparent calc(100% - 10px)
     );
 }
+
+/* Mobile/touch: increase hit area for resize handles */
+@media (pointer: coarse) {
+  .n, .s { height: 12px; }
+  .e, .w { width: 12px; }
+  .ne, .se, .sw, .nw { width: 16px; height: 16px; }
+  
+  .sizeGrip {
+    width: 20px;
+    height: 20px;
+  }
+}

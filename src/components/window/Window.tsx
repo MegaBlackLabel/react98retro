@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useRef, useState, useMemo, type CSSProperties, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { TitleBar } from './TitleBar';
 import { useDraggable } from '../../hooks/useDraggable';
@@ -29,6 +29,32 @@ export interface WindowProps {
   zIndex?: number;
 }
 
+function getResponsiveSize(
+  width: number,
+  height: number,
+  initialX: number,
+  initialY: number,
+): { width: number; height: number; x: number; y: number } {
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+
+  // On narrow viewports, use almost full width with some padding
+  const isNarrow = viewportWidth < 640;
+  const responsiveWidth = isNarrow ? Math.min(width, viewportWidth - 16) : Math.min(width, viewportWidth - 32);
+  const responsiveHeight = Math.min(height, viewportHeight - 32);
+
+  // Clamp position to keep window in viewport
+  const maxX = Math.max(0, viewportWidth - responsiveWidth);
+  const maxY = Math.max(0, viewportHeight - responsiveHeight);
+
+  return {
+    width: responsiveWidth,
+    height: responsiveHeight,
+    x: Math.max(8, Math.min(initialX, maxX)),
+    y: Math.max(8, Math.min(initialY, maxY)),
+  };
+}
+
 export function Window({
   title,
   icon,
@@ -53,23 +79,36 @@ export function Window({
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
 
-  // ドラッグ・リサイズで共有する単一ポジション state
-  const [position, setPosition] = useState({ x: initialX, y: initialY });
+  // Calculate responsive initial size and position
+  const responsiveInitial = useMemo(
+    () => getResponsiveSize(width, height, initialX, initialY),
+    [width, height, initialX, initialY],
+  );
 
-  const { dragHandleProps } = useDraggable({
-    initialX,
-    initialY,
+  // ドラッグ・リサイズで共有する単一ポジション state
+  const [position, setPosition] = useState({ x: responsiveInitial.x, y: responsiveInitial.y });
+
+  // useResizable must come BEFORE useDraggable so we can use the live size for drag bounds
+  const { size, getResizeHandleProps } = useResizable({
+    initialWidth: responsiveInitial.width,
+    initialHeight: responsiveInitial.height,
+    initialX: responsiveInitial.x,
+    initialY: responsiveInitial.y,
     position,
     onPositionChange: setPosition,
+    minWidth: 200,
+    minHeight: 100,
+    clampToViewport: true,
+    reconcileOnResize: true, // Re-clamp window when viewport changes after mount
   });
 
-  const { size, getResizeHandleProps } = useResizable({
-    initialWidth: width,
-    initialHeight: height,
-    initialX,
-    initialY,
+  // useDraggable uses the LIVE size from useResizable for bounds, not the initial size
+  const { dragHandleProps } = useDraggable({
+    initialX: responsiveInitial.x,
+    initialY: responsiveInitial.y,
     position,
     onPositionChange: setPosition,
+    bounds: { width: size.width, height: size.height },
   });
 
   const handleMinimize = () => {
