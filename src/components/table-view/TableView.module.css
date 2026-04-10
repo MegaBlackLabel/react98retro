@@ -1,3 +1,43 @@
+.headerButton {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 4px;
+  justify-content: space-between;
+  margin: 0;
+  min-height: auto;
+  min-width: auto;
+  padding: 0;
+  text-align: left;
+  text-shadow: none;
+  width: 100%;
+}
+
+.headerButton:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: -1px;
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.sortIndicator {
+  display: none;
+}
+
+.headerCell {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .resizeHandle {
   position: absolute;
   right: 0;
@@ -13,10 +53,4 @@
 .resizeHandle:active {
   background: #000080;
   opacity: 0.3;
-}
-
-th {
-  position: relative;
-  overflow: hidden;
-  white-space: nowrap;
 }

@@ -59,4 +59,4 @@ export { SplitButton } from './split-button';
 export type { SplitButtonProps } from './split-button';
 
 export { TableView } from './table-view';
-export type { TableColumn, TableViewProps } from './table-view';
+export type { TableColumn, TableViewProps, TableSortState, TableSortDirection } from './table-view';
