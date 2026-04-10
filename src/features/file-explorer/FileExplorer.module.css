@@ -56,3 +56,137 @@
   padding-bottom: 2px !important;
   line-height: normal !important;
 }
+
+/* Mobile/narrow viewport: stack panes vertically */
+@media (max-width: 640px) {
+  .mainContent {
+    flex-direction: column;
+  }
+
+  .leftPane {
+    width: 100% !important;
+    max-height: 35%;
+    min-height: 80px;
+    border-bottom: 1px solid #808080;
+  }
+
+  .splitter {
+    display: none;
+  }
+
+  .rightPane {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* Large Icons View */
+.largeIconsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  height: 100%;
+  overflow: auto;
+  background: #ffffff;
+}
+
+/* Small Icons View */
+.smallIconsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 8px;
+  height: 100%;
+  overflow: auto;
+  background: #ffffff;
+  align-content: flex-start;
+}
+
+/* Icon item (shared between large and small) */
+.iconItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-align: center;
+  user-select: none;
+}
+
+.iconItem:hover {
+  border: 1px dotted #808080;
+}
+
+.iconItemSelected {
+  background: #000080;
+  color: #ffffff;
+  border: 1px solid #000080;
+}
+
+.iconItemSelected .iconLabel {
+  color: #ffffff;
+}
+
+.iconLabel {
+  font-size: 11px;
+  line-height: 1.2;
+  margin-top: 4px;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.smallIconsGrid .iconItem {
+  flex-direction: row;
+  gap: 4px;
+  padding: 2px 4px;
+  min-width: 120px;
+}
+
+.smallIconsGrid .iconLabel {
+  margin-top: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* List View */
+.listView {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  height: 100%;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.listItem:hover {
+  background: #e0e0e0;
+}
+
+.listItemSelected {
+  background: #000080;
+  color: #ffffff;
+}
+
+.listItemSelected .listLabel {
+  color: #ffffff;
+}
+
+.listLabel {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
