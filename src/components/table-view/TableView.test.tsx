@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TableView } from './TableView';
+import type { TableColumn, TableSortDirection, TableSortState } from './index';
 
 type Row = {
   id: string;
@@ -13,10 +14,10 @@ type Row = {
 };
 
 describe('TableView', () => {
-  const columns = [
+  const columns: readonly TableColumn<Row>[] = [
     { key: 'name', header: 'Name' },
     { key: 'size', header: 'Size' },
-  ] as const;
+  ];
 
   const rows: Row[] = [
     { id: '1', name: 'file.txt', size: '1 KB', type: 'Text', modified: 'Today' },
@@ -35,6 +36,25 @@ describe('TableView', () => {
 
     expect(screen.getByText('file.txt')).toBeInTheDocument();
     expect(screen.getByText('other.txt')).toBeInTheDocument();
+  });
+
+  it('preserves string column widths', () => {
+    render(<TableView columns={[{ key: 'name', header: 'Name', width: '40%' }]} rows={rows} />);
+
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveStyle({ width: '40%' });
+  });
+
+  it('does not render a clickable sort button when sort is read-only', () => {
+    render(
+      <TableView
+        columns={columns}
+        rows={rows}
+        sort={{ columnKey: 'name', direction: 'asc' }}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Name' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveTextContent('Name');
   });
 
   it('clicking row calls onSelectionChange with row id', async () => {
@@ -71,5 +91,50 @@ describe('TableView', () => {
     );
 
     expect(screen.getByText('file.txt').closest('tr')).toHaveClass('highlighted');
+  });
+
+  it('clicking a sortable header calls onSortChange with ascending direction first', async () => {
+    const user = userEvent.setup();
+    const onSortChange = vi.fn();
+
+    render(
+      <TableView
+        columns={columns}
+        rows={rows}
+        sort={{ columnKey: null, direction: 'asc' }}
+        onSortChange={onSortChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Name' }));
+
+    expect(onSortChange).toHaveBeenCalledWith({ columnKey: 'name', direction: 'asc' });
+  });
+
+  it('does not show a visible sort indicator on the active sort column', () => {
+    render(
+      <TableView
+        columns={columns}
+        rows={rows}
+        sort={{ columnKey: 'size', direction: 'desc' }}
+        onSortChange={vi.fn()}
+      />,
+    );
+
+    // Sort indicator should not be visible (no ◆ character)
+    expect(screen.queryByText('◆')).not.toBeInTheDocument();
+    // No visible active-sort styling via data attribute
+    const sizeButton = screen.getByRole('button', { name: 'Size sorted descending' });
+    expect(sizeButton).not.toHaveAttribute('data-active-sort');
+    // But the button should still have accessible label indicating sort state
+    expect(sizeButton).toBeInTheDocument();
+  });
+
+  it('exposes sort types from the table-view barrel', () => {
+    const sortDirection: TableSortDirection = 'asc';
+    const sortState: TableSortState<Row> = { columnKey: 'name', direction: sortDirection };
+
+    expect(sortState.columnKey).toBe('name');
+    expect(sortState.direction).toBe('asc');
   });
 });

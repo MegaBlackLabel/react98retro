@@ -11,8 +11,8 @@ function App() {
         <FileExplorer
           initialX={20}
           initialY={20}
-          initialWidth={780}
-          initialHeight={500}
+          initialWidth={Math.min(780, typeof window !== 'undefined' ? window.innerWidth - 40 : 780)}
+          initialHeight={Math.min(500, typeof window !== 'undefined' ? window.innerHeight - 40 : 500)}
           onClose={() => setExplorerOpen(false)}
         />
       )}
