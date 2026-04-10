@@ -6,6 +6,10 @@
   box-sizing: border-box;
   outline: none;
   padding: 1px 0;
+  flex-wrap: nowrap;
+  /* Note: overflow: hidden is intentionally NOT used here because dropdown 
+     menus are absolutely positioned children that could be clipped. 
+     flex-wrap: nowrap with flex-shrink: 0 on children prevents wrapping. */
 }
 
 /* Win98-style stipple grip – tiny 3D raised bumps */
@@ -34,6 +38,8 @@
   font-weight: 500;
   font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
   color: #000000;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .menuBarItem:hover,
@@ -149,4 +155,22 @@
   min-width: 120px;
   z-index: 10000;
   padding: 2px;
+}
+
+/* Compact mode for narrow windows - hide right icons and reduce padding */
+@media (max-width: 480px) {
+  .rightArea,
+  .rightAreaSeparator {
+    display: none;
+  }
+  
+  .grip {
+    width: 4px;
+    margin: 2px 2px 2px 2px;
+  }
+  
+  .menuBarItem {
+    padding: 2px 4px;
+    font-size: 10px;
+  }
 }

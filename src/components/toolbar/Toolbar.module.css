@@ -13,7 +13,7 @@
   width: 6px;
   align-self: stretch;
   flex-shrink: 0;
-  margin: 2px 4px 2px 1px;
+  margin: 2px 4px 2px 0px;
   background-color: #c0c0c0;
   background-image:
     radial-gradient(circle at 0.5px 0.5px, #ffffff 0.5px, transparent 0.5px),
