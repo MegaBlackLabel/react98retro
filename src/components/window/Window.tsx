@@ -24,6 +24,8 @@ export interface WindowProps {
   onMaximize?: () => void;
   onRestore?: () => void;
   onClose?: () => void;
+  snapEnabled?: boolean;
+  snapThreshold?: number;
   style?: CSSProperties;
   className?: string;
   zIndex?: number;
@@ -71,6 +73,8 @@ export function Window({
   onMaximize,
   onRestore,
   onClose,
+  snapEnabled = true,
+  snapThreshold = 20,
   style,
   className,
   zIndex,
@@ -78,6 +82,10 @@ export function Window({
   const titleBarRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
+  const [activeZIndex, setActiveZIndex] = useState(zIndex ?? 1);
+  const preSnapPosition = useRef<{ x: number; y: number } | null>(null);
+  const preSnapSize = useRef<{ width: number; height: number } | null>(null);
+  const [isSnapped, setIsSnapped] = useState(false);
 
   // Calculate responsive initial size and position
   const responsiveInitial = useMemo(
@@ -85,11 +93,13 @@ export function Window({
     [width, height, initialX, initialY],
   );
 
+  const snapActive = !isMaximized && snapEnabled;
+
   // ドラッグ・リサイズで共有する単一ポジション state
   const [position, setPosition] = useState({ x: responsiveInitial.x, y: responsiveInitial.y });
 
   // useResizable must come BEFORE useDraggable so we can use the live size for drag bounds
-  const { size, getResizeHandleProps } = useResizable({
+  const { size, setSize, getResizeHandleProps } = useResizable({
     initialWidth: responsiveInitial.width,
     initialHeight: responsiveInitial.height,
     initialX: responsiveInitial.x,
@@ -103,13 +113,49 @@ export function Window({
   });
 
   // useDraggable uses the LIVE size from useResizable for bounds, not the initial size
-  const { dragHandleProps } = useDraggable({
+  const { dragHandleProps, snapTarget } = useDraggable({
     initialX: responsiveInitial.x,
     initialY: responsiveInitial.y,
     position,
     onPositionChange: setPosition,
+    snapEnabled: snapActive,
+    snapThreshold: snapActive ? snapThreshold : undefined,
+    minWidth: snapActive ? 200 : undefined,
+    minHeight: snapActive ? 100 : undefined,
     bounds: { width: size.width, height: size.height },
+      onSnapCommit: snapActive
+        ? (target) => {
+            preSnapPosition.current = { x: position.x, y: position.y };
+            preSnapSize.current = { width: size.width, height: size.height };
+            setPosition({ x: target.x, y: target.y });
+            setSize({ width: target.width, height: target.height });
+            setIsSnapped(true);
+          }
+        : undefined,
+    onDragStart: () => {
+      setActiveZIndex((current) => current + 1);
+
+      if (!isSnapped || !preSnapPosition.current || !preSnapSize.current) {
+        return;
+      }
+
+      setPosition(preSnapPosition.current);
+      setSize(preSnapSize.current);
+      setIsSnapped(false);
+    },
   });
+
+  const snapPreviewStyle =
+    snapTarget && !isMinimized && !isMaximized
+      ? {
+          position: 'fixed' as const,
+          top: snapTarget.y,
+          left: snapTarget.x,
+          width: snapTarget.width,
+          height: snapTarget.height,
+          zIndex: activeZIndex + 1,
+        }
+      : null;
 
   const handleMinimize = () => {
     setIsMinimized((prev) => !prev);
@@ -133,7 +179,6 @@ export function Window({
         left: 4,
         width: 220,
         height: 'auto',
-        zIndex,
         ...style,
       }
     : isMaximized
@@ -143,7 +188,6 @@ export function Window({
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex,
         ...style,
       }
     : {
@@ -152,14 +196,13 @@ export function Window({
         left: position.x,
         width: size.width,
         height: size.height,
-        zIndex,
         ...style,
       };
 
-  return (
+  const windowRoot = (
     <div
       className={clsx('window', styles.window, className)}
-      style={{ ...computedStyle, display: 'flex', flexDirection: 'column' }}
+      style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: activeZIndex }}
     >
       <TitleBar
         ref={titleBarRef}
@@ -208,5 +251,18 @@ export function Window({
           );
         })}
     </div>
+  );
+
+  return (
+    <>
+      {windowRoot}
+      {snapPreviewStyle && (
+        <div
+          aria-hidden="true"
+          className={styles.snapPreview}
+          style={snapPreviewStyle}
+        />
+      )}
+    </>
   );
 }

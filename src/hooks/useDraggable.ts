@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getSnapTarget, type SnapTarget } from './snap';
 
 export interface DraggablePosition {
   x: number;
@@ -13,6 +15,7 @@ export interface DraggableBounds {
 export interface UseDraggableResult {
   position: DraggablePosition;
   setPosition: (pos: DraggablePosition) => void;
+  snapTarget: SnapTarget | null;
   dragHandleProps: {
     onPointerDown: (e: React.PointerEvent) => void;
   };
@@ -42,10 +45,32 @@ export function useDraggable(options?: {
   /** 外部から位置を渡す場合 (Window.tsx の単一 position state を共有) */
   position?: DraggablePosition;
   onPositionChange?: (pos: DraggablePosition) => void;
+  snapEnabled?: boolean;
+  snapThreshold?: number;
+  minWidth?: number;
+  minHeight?: number;
+  onSnapCommit?: (target: SnapTarget) => void;
+  onDragStart?: () => void;
   /** ウィンドウサイズを指定してビューポート内に収める */
   bounds?: DraggableBounds;
 }): UseDraggableResult {
   const bounds = options?.bounds;
+  const snapOptionsRef = useRef({
+    snapEnabled: options?.snapEnabled,
+    snapThreshold: options?.snapThreshold ?? 20,
+    minWidth: options?.minWidth ?? 200,
+    minHeight: options?.minHeight ?? 100,
+    onSnapCommit: options?.onSnapCommit,
+    onDragStart: options?.onDragStart,
+  });
+  snapOptionsRef.current = {
+    snapEnabled: options?.snapEnabled,
+    snapThreshold: options?.snapThreshold ?? 20,
+    minWidth: options?.minWidth ?? 200,
+    minHeight: options?.minHeight ?? 100,
+    onSnapCommit: options?.onSnapCommit,
+    onDragStart: options?.onDragStart,
+  };
 
   // Calculate clamped initial position
   const initialPosition = useMemo(() => {
@@ -57,6 +82,7 @@ export function useDraggable(options?: {
   }, [options?.initialX, options?.initialY, bounds]);
 
   const [internalPosition, setInternalPosition] = useState<DraggablePosition>(initialPosition);
+  const [snapTarget, setSnapTarget] = useState<SnapTarget | null>(null);
 
   // 外部 state が渡されていればそちらを使う
   const externalPosition = options?.position;
@@ -91,9 +117,22 @@ export function useDraggable(options?: {
     target: Element;
   } | null>(null);
 
+  const listenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+    cancel: (e: PointerEvent) => void;
+  }>({
+    move: () => {},
+    up: () => {},
+    cancel: () => {},
+  });
+
   // 最新の position を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
   positionRef.current = position;
+
+  const snapTargetRef = useRef<SnapTarget | null>(null);
+  snapTargetRef.current = snapTarget;
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -104,25 +143,94 @@ export function useDraggable(options?: {
         x: dragState.current.startX + dx,
         y: dragState.current.startY + dy,
       });
+
+      if (snapOptionsRef.current.snapEnabled === false) {
+        if (snapTargetRef.current !== null) {
+          snapTargetRef.current = null;
+          setSnapTarget(null);
+        }
+        return;
+      }
+
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+      const nextSnapTarget = getSnapTarget({
+        pointerX: e.clientX,
+        pointerY: e.clientY,
+        viewportWidth,
+        viewportHeight,
+        threshold: snapOptionsRef.current.snapThreshold,
+        minWidth: snapOptionsRef.current.minWidth,
+        minHeight: snapOptionsRef.current.minHeight,
+      });
+
+      if (nextSnapTarget?.zone !== snapTargetRef.current?.zone) {
+        snapTargetRef.current = nextSnapTarget;
+        setSnapTarget(nextSnapTarget);
+      } else {
+        snapTargetRef.current = nextSnapTarget;
+      }
     },
-    [setPosition],
+    [setPosition, setSnapTarget],
+  );
+
+  const cleanupDrag = useCallback(
+    (pointerId: number) => {
+      const currentDragState = dragState.current;
+      if (!currentDragState || currentDragState.pointerId !== pointerId) return;
+      currentDragState.target.releasePointerCapture(pointerId);
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
+      window.removeEventListener('pointercancel', listenersRef.current.cancel);
+      dragState.current = null;
+      snapTargetRef.current = null;
+      setSnapTarget(null);
+    },
+    [setSnapTarget],
   );
 
   const onPointerUp = useCallback(
     (e: PointerEvent) => {
       if (!dragState.current || e.pointerId !== dragState.current.pointerId) return;
-      dragState.current.target.releasePointerCapture(e.pointerId);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      dragState.current = null;
+      const currentSnapTarget = snapTargetRef.current;
+      if (currentSnapTarget && snapOptionsRef.current.snapEnabled !== false) {
+        snapOptionsRef.current.onSnapCommit?.(currentSnapTarget);
+      }
+      cleanupDrag(e.pointerId);
     },
-    [onPointerMove],
+    [cleanupDrag],
   );
+
+  const onPointerCancel = useCallback(
+    (e: PointerEvent) => {
+      cleanupDrag(e.pointerId);
+    },
+    [cleanupDrag],
+  );
+
+  useEffect(
+    () => () => {
+      if (!dragState.current) return;
+      cleanupDrag(dragState.current.pointerId);
+    },
+    [cleanupDrag],
+  );
+  // 最新のリスナーを ref に反映（stale closure 防止）
+  useEffect(() => {
+    listenersRef.current = {
+      move: onPointerMove,
+      up: onPointerUp,
+      cancel: onPointerCancel,
+    };
+  }, [onPointerMove, onPointerUp, onPointerCancel]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       // ボタンをクリックした場合はドラッグを開始しない
       if ((e.target as Element).closest('button')) return;
+      flushSync(() => {
+        snapOptionsRef.current.onDragStart?.();
+      });
       e.currentTarget.setPointerCapture(e.pointerId);
       // positionRef.current を使うことでリサイズ後の実際の位置から正しくドラッグ開始できる
       dragState.current = {
@@ -135,13 +243,15 @@ export function useDraggable(options?: {
       };
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerCancel);
     },
-    [onPointerMove, onPointerUp],
+    [onPointerMove, onPointerUp, onPointerCancel],
   );
 
   return {
     position,
     setPosition,
+    snapTarget,
     dragHandleProps: { onPointerDown },
   };
 }
