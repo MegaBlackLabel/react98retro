@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock the hooks to verify they're called with correct arguments
@@ -20,6 +20,7 @@ describe('Window hook wiring', () => {
     mockUseResizable.mockReturnValue({
       size: { width: 400, height: 300 },
       position: { x: 50, y: 50 },
+      setSize: vi.fn(),
       getResizeHandleProps: vi.fn(() => ({ style: {}, onPointerDown: vi.fn() })),
     });
     mockUseDraggable.mockReturnValue({
@@ -44,6 +45,19 @@ describe('Window hook wiring', () => {
       clampToViewport: true,
       reconcileOnResize: true,
     });
+  });
+
+  it('passes snap options and snap commit handler to useDraggable', () => {
+    render(<Window title="Test" width={400} height={300} initialX={50} initialY={50} />);
+
+    const draggableCall = mockUseDraggable.mock.calls[0][0];
+    expect(draggableCall).toMatchObject({
+      snapEnabled: true,
+      snapThreshold: 20,
+      minWidth: 200,
+      minHeight: 100,
+    });
+    expect(typeof draggableCall.onSnapCommit).toBe('function');
   });
 
   it('passes live size from useResizable to useDraggable bounds', () => {
@@ -87,5 +101,45 @@ describe('Window hook wiring', () => {
     // Verify updated bounds reflect the new size
     const lastDraggableCall = mockUseDraggable.mock.calls[mockUseDraggable.mock.calls.length - 1][0];
     expect(lastDraggableCall.bounds).toEqual({ width: 600, height: 450 });
+  });
+
+  it('commits snap target to both position and size', () => {
+    const setSize = vi.fn();
+
+    mockUseResizable.mockReturnValue({
+      size: { width: 400, height: 300 },
+      position: { x: 50, y: 50 },
+      setSize,
+      getResizeHandleProps: vi.fn(() => ({ style: {}, onPointerDown: vi.fn() })),
+    });
+    mockUseDraggable.mockReturnValue({
+      position: { x: 50, y: 50 },
+      setPosition: vi.fn(),
+      dragHandleProps: { onPointerDown: vi.fn() },
+    });
+
+    render(<Window title="Test" width={400} height={300} initialX={50} initialY={50} />);
+
+    const draggableCall = mockUseDraggable.mock.calls[0][0];
+    expect(typeof draggableCall.onSnapCommit).toBe('function');
+    const onSnapCommit = draggableCall.onSnapCommit as (target: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      zone: string;
+    }) => void;
+
+    act(() => {
+      onSnapCommit({
+        x: 512,
+        y: 0,
+        width: 512,
+        height: 768,
+        zone: 'right',
+      });
+    });
+
+    expect(setSize).toHaveBeenCalledWith({ width: 512, height: 768 });
   });
 });

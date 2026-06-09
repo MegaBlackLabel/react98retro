@@ -32,6 +32,11 @@ describe('TitleBar', () => {
     expect(screen.queryByRole('button', { name: 'Maximize' })).toBeNull();
   });
 
+  it('renders the Restore control as a button when maximized', () => {
+    render(<TitleBar title="Test" isMaximized={true} onRestore={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Restore' }).tagName).toBe('BUTTON');
+  });
+
   it('calls onMinimize when Minimize button is clicked', async () => {
     const onMinimize = vi.fn();
     render(<TitleBar title="Test" onMinimize={onMinimize} />);

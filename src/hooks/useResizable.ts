@@ -17,6 +17,7 @@ const cursorMap: Record<ResizeDirection, string> = {
 export interface UseResizableResult {
   size: { width: number; height: number };
   position: { x: number; y: number };
+  setSize: (size: { width: number; height: number }) => void;
   getResizeHandleProps: (direction: ResizeDirection) => {
     style: CSSProperties;
     onPointerDown: (e: React.PointerEvent) => void;
@@ -216,5 +217,5 @@ export function useResizable(options?: {
     [onPointerMove, onPointerUp],
   );
 
-  return { size, position, getResizeHandleProps };
+  return { size, position, setSize, getResizeHandleProps };
 }

@@ -41,8 +41,16 @@
       transparent calc(100% - 12px),
       #ffffff calc(100% - 12px), #ffffff calc(100% - 11px),
       #808080 calc(100% - 11px), #808080 calc(100% - 10px),
-      transparent calc(100% - 10px)
+    transparent calc(100% - 10px)
     );
+}
+
+.snapPreview {
+  position: fixed;
+  background: rgba(0, 120, 212, 0.28);
+  border: 2px solid rgba(0, 120, 212, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
 }
 
 /* Mobile/touch: increase hit area for resize handles */
