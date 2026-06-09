@@ -102,6 +102,14 @@ export function useResizable(options?: {
   const position = options?.position ?? internalPosition;
   const setPosition = options?.onPositionChange ?? setInternalPosition;
 
+  const setSizeConstrained = useCallback(
+    (newSize: { width: number; height: number }) => {
+      const clampedWidth = Math.max(minWidth, newSize.width);
+      const clampedHeight = Math.max(minHeight, newSize.height);
+      setSize({ width: clampedWidth, height: clampedHeight });
+    },
+    [minWidth, minHeight],
+  );
   // Post-mount viewport resize handling - only when BOTH flags are enabled
   useEffect(() => {
     if (!reconcileOnResize || !clampToViewportEnabled) return;
@@ -217,5 +225,5 @@ export function useResizable(options?: {
     [onPointerMove, onPointerUp],
   );
 
-  return { size, position, setSize, getResizeHandleProps };
+  return { size, position, setSize: setSizeConstrained, getResizeHandleProps };
 }

@@ -115,12 +115,17 @@ export function useDraggable(options?: {
     startY: number;
     pointerId: number;
     target: Element;
-    listeners: {
-      move: (e: PointerEvent) => void;
-      up: (e: PointerEvent) => void;
-      cancel: (e: PointerEvent) => void;
-    };
   } | null>(null);
+
+  const listenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+    cancel: (e: PointerEvent) => void;
+  }>({
+    move: () => {},
+    up: () => {},
+    cancel: () => {},
+  });
 
   // 最新の position を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
@@ -166,7 +171,22 @@ export function useDraggable(options?: {
         snapTargetRef.current = nextSnapTarget;
       }
     },
-    [setPosition],
+    [setPosition, setSnapTarget],
+  );
+
+  const cleanupDrag = useCallback(
+    (pointerId: number) => {
+      const currentDragState = dragState.current;
+      if (!currentDragState || currentDragState.pointerId !== pointerId) return;
+      currentDragState.target.releasePointerCapture(pointerId);
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
+      window.removeEventListener('pointercancel', listenersRef.current.cancel);
+      dragState.current = null;
+      snapTargetRef.current = null;
+      setSnapTarget(null);
+    },
+    [setSnapTarget],
   );
 
   const onPointerUp = useCallback(
@@ -178,22 +198,7 @@ export function useDraggable(options?: {
       }
       cleanupDrag(e.pointerId);
     },
-    [],
-  );
-
-  const cleanupDrag = useCallback(
-    (pointerId: number) => {
-      const currentDragState = dragState.current;
-      if (!currentDragState || currentDragState.pointerId !== pointerId) return;
-      currentDragState.target.releasePointerCapture(pointerId);
-      window.removeEventListener('pointermove', currentDragState.listeners.move);
-      window.removeEventListener('pointerup', currentDragState.listeners.up);
-      window.removeEventListener('pointercancel', currentDragState.listeners.cancel);
-      dragState.current = null;
-      snapTargetRef.current = null;
-      setSnapTarget(null);
-    },
-    [],
+    [cleanupDrag],
   );
 
   const onPointerCancel = useCallback(
@@ -210,6 +215,14 @@ export function useDraggable(options?: {
     },
     [cleanupDrag],
   );
+  // 最新のリスナーを ref に反映（stale closure 防止）
+  useEffect(() => {
+    listenersRef.current = {
+      move: onPointerMove,
+      up: onPointerUp,
+      cancel: onPointerCancel,
+    };
+  }, [onPointerMove, onPointerUp, onPointerCancel]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -227,11 +240,6 @@ export function useDraggable(options?: {
         startY: positionRef.current.y,
         pointerId: e.pointerId,
         target: e.currentTarget,
-        listeners: {
-          move: onPointerMove,
-          up: onPointerUp,
-          cancel: onPointerCancel,
-        },
       };
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);

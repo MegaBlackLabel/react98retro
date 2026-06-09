@@ -123,15 +123,15 @@ export function Window({
     minWidth: snapActive ? 200 : undefined,
     minHeight: snapActive ? 100 : undefined,
     bounds: { width: size.width, height: size.height },
-    onSnapCommit: snapActive
-      ? (target) => {
-          preSnapPosition.current = { x: position.x, y: position.y };
-          preSnapSize.current = { width: size.width, height: size.height };
-          setPosition({ x: target.x, y: target.y });
-          setSize({ width: target.width, height: target.height });
-          setIsSnapped(true);
-        }
-      : undefined,
+      onSnapCommit: snapActive
+        ? (target) => {
+            preSnapPosition.current = { x: position.x, y: position.y };
+            preSnapSize.current = { width: size.width, height: size.height };
+            setPosition({ x: target.x, y: target.y });
+            setSize({ width: target.width, height: target.height });
+            setIsSnapped(true);
+          }
+        : undefined,
     onDragStart: () => {
       setActiveZIndex((current) => current + 1);
 
@@ -179,7 +179,6 @@ export function Window({
         left: 4,
         width: 220,
         height: 'auto',
-        zIndex: activeZIndex,
         ...style,
       }
     : isMaximized
@@ -189,7 +188,6 @@ export function Window({
         left: 0,
         width: '100vw',
         height: '100vh',
-        zIndex: activeZIndex,
         ...style,
       }
     : {
@@ -198,14 +196,13 @@ export function Window({
         left: position.x,
         width: size.width,
         height: size.height,
-        zIndex: activeZIndex,
         ...style,
       };
 
   const windowRoot = (
     <div
       className={clsx('window', styles.window, className)}
-      style={{ ...computedStyle, display: 'flex', flexDirection: 'column' }}
+      style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: activeZIndex }}
     >
       <TitleBar
         ref={titleBarRef}
