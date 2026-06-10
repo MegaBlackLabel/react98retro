@@ -60,4 +60,72 @@ describe('useWindowManager', () => {
     expect(result.current.windows['win1']).toBeUndefined();
     expect(result.current.windows['win2']).toBeDefined();
   });
+
+  it('register adds a new window dynamically', () => {
+    const { result } = renderHook(() => useWindowManager());
+    act(() => {
+      result.current.register('win1');
+    });
+    expect(result.current.windows['win1']).toBeDefined();
+    expect(result.current.windows['win1'].minimized).toBe(false);
+    expect(result.current.windows['win1'].maximized).toBe(false);
+    expect(result.current.windows['win1'].zIndex).toBe(1);
+  });
+
+  it('keeps the active window above newly registered inactive windows', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.focus('win1');
+    });
+
+    act(() => {
+      result.current.register('win2');
+    });
+
+    expect(result.current.activeWindowId).toBe('win1');
+    expect(result.current.windows['win1'].zIndex).toBeGreaterThan(result.current.windows['win2'].zIndex);
+  });
+
+  it('unregister removes a window', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+    act(() => {
+      result.current.unregister('win1');
+    });
+    expect(result.current.windows['win1']).toBeUndefined();
+    expect(result.current.windows['win2']).toBeDefined();
+  });
+
+  it('focus sets activeWindowId', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+    act(() => {
+      result.current.focus('win1');
+    });
+    expect(result.current.activeWindowId).toBe('win1');
+  });
+
+  it('isActive returns true for focused window', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+    act(() => {
+      result.current.focus('win1');
+    });
+    expect(result.current.isActive('win1')).toBe(true);
+  });
+
+  it('isActive returns false for unfocused window', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+    act(() => {
+      result.current.focus('win1');
+    });
+    expect(result.current.isActive('win2')).toBe(false);
+  });
+
+  it('works without initial windowIds (optional parameter)', () => {
+    const { result } = renderHook(() => useWindowManager());
+    expect(result.current.windows).toEqual({});
+    act(() => {
+      result.current.register('win1');
+    });
+    expect(result.current.windows['win1']).toBeDefined();
+  });
 });

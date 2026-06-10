@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
+import { join } from 'node:path';
 import { TitleBar } from './TitleBar';
 
 describe('TitleBar', () => {
@@ -19,6 +20,20 @@ describe('TitleBar', () => {
   it('adds inactive class when inactive=true', () => {
     const { container } = render(<TitleBar title="Test" inactive />);
     expect(container.firstChild).toHaveClass('inactive');
+  });
+
+  it('defines inactive title-bar styling in raw CSS', async () => {
+    const { default: titleBarStyles } = await import('./TitleBar.module.css?raw');
+    const rawCss =
+      typeof titleBarStyles === 'string'
+        ? titleBarStyles
+        : await import('node:fs/promises').then(({ readFile }) =>
+            readFile(join(process.cwd(), 'src/components/window/TitleBar.module.css'), 'utf8'),
+          );
+
+    expect(rawCss).toContain('.titleBar:global(.inactive)');
+    expect(rawCss).toContain('linear-gradient(90deg, #808080, #b5b5b5)');
+    expect(rawCss).toContain('color: #ffffff');
   });
 
   it('always renders minimize button even without onMinimize prop', () => {

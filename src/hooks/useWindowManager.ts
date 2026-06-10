@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export interface WindowState {
   id: string;
@@ -9,14 +9,18 @@ export interface WindowState {
 
 export interface UseWindowManagerResult {
   windows: Record<string, WindowState>;
+  activeWindowId: string | null;
   focus: (id: string) => void;
   minimize: (id: string) => void;
   maximize: (id: string) => void;
   restore: (id: string) => void;
   close: (id: string) => void;
+  register: (id: string) => void;
+  unregister: (id: string) => void;
+  isActive: (id: string) => boolean;
 }
 
-export function useWindowManager(windowIds: string[]): UseWindowManagerResult {
+export function useWindowManager(windowIds: string[] = []): UseWindowManagerResult {
   const [windows, setWindows] = useState<Record<string, WindowState>>(() => {
     const initial: Record<string, WindowState> = {};
     windowIds.forEach((id, i) => {
@@ -24,6 +28,10 @@ export function useWindowManager(windowIds: string[]): UseWindowManagerResult {
     });
     return initial;
   });
+
+  const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
+  const activeWindowIdRef = useRef(activeWindowId);
+  activeWindowIdRef.current = activeWindowId;
 
   const getMaxZIndex = (state: Record<string, WindowState>): number =>
     Math.max(0, ...Object.values(state).map((w) => w.zIndex));
@@ -35,6 +43,7 @@ export function useWindowManager(windowIds: string[]): UseWindowManagerResult {
       if (prev[id].zIndex === maxZ) return prev;
       return { ...prev, [id]: { ...prev[id], zIndex: maxZ + 1 } };
     });
+    setActiveWindowId(id);
   }, []);
 
   const minimize = useCallback((id: string) => {
@@ -64,7 +73,37 @@ export function useWindowManager(windowIds: string[]): UseWindowManagerResult {
       delete next[id];
       return next;
     });
+    setActiveWindowId((prev) => (prev === id ? null : prev));
   }, []);
 
-  return { windows, focus, minimize, maximize, restore, close };
+  const register = useCallback((id: string) => {
+    setWindows((prev) => {
+      if (prev[id]) return prev;
+
+      const maxZ = getMaxZIndex(prev);
+      const next = { ...prev, [id]: { id, minimized: false, maximized: false, zIndex: maxZ + 1 } };
+
+      const currentActive = activeWindowIdRef.current;
+      if (currentActive && currentActive !== id && next[currentActive]) {
+        next[currentActive] = { ...next[currentActive], zIndex: maxZ + 2 };
+      }
+
+      return next;
+    });
+    setActiveWindowId((current) => current ?? id); // Auto-focus first window
+  }, []);
+
+  const unregister = useCallback((id: string) => {
+    setWindows((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setActiveWindowId((prev) => (prev === id ? null : prev));
+  }, []);
+
+  const isActive = useCallback((id: string) => activeWindowId === id, [activeWindowId]);
+
+  return { windows, activeWindowId, focus, minimize, maximize, restore, close, register, unregister, isActive };
 }

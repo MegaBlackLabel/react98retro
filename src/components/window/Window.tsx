@@ -1,8 +1,9 @@
-import { useRef, useState, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useRef, useState, useMemo, type CSSProperties, type ReactNode, useEffect, useId } from 'react';
 import clsx from 'clsx';
 import { TitleBar } from './TitleBar';
 import { useDraggable } from '../../hooks/useDraggable';
 import { useResizable } from '../../hooks/useResizable';
+import { useWindowManagerContext } from './WindowManagerContext';
 import type { ResizeDirection } from '../../hooks/useResizable';
 import styles from './Window.module.css';
 
@@ -29,6 +30,7 @@ export interface WindowProps {
   style?: CSSProperties;
   className?: string;
   zIndex?: number;
+  id?: string;
 }
 
 function getResponsiveSize(
@@ -78,7 +80,13 @@ export function Window({
   style,
   className,
   zIndex,
+  id,
 }: WindowProps) {
+  const context = useWindowManagerContext();
+  const isManaged = context !== null;
+  const generatedId = useId();
+  const windowId = isManaged ? (id ?? generatedId) : undefined;
+
   const titleBarRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
@@ -86,6 +94,25 @@ export function Window({
   const preSnapPosition = useRef<{ x: number; y: number } | null>(null);
   const preSnapSize = useRef<{ width: number; height: number } | null>(null);
   const [isSnapped, setIsSnapped] = useState(false);
+  const register = context?.register;
+  const unregister = context?.unregister;
+
+  // Managed mode: register/unregister with window manager
+  useEffect(() => {
+    if (!isManaged || !windowId || !register || !unregister) return;
+    register(windowId);
+    return () => {
+      unregister(windowId);
+    };
+  }, [isManaged, windowId, register, unregister]);
+
+  // Managed mode: get z-index and active state from context
+  const managedZIndex = isManaged && windowId && context ? (context.windows[windowId]?.zIndex ?? 1) : undefined;
+  const managedIsActive = isManaged && windowId && context ? context.isActive(windowId) : undefined;
+
+  // Use managed z-index when available, otherwise fall back to local state
+  const effectiveZIndex = managedZIndex !== undefined ? managedZIndex : activeZIndex;
+  const effectiveInactive = managedIsActive !== undefined ? !managedIsActive : inactive;
 
   // Calculate responsive initial size and position
   const responsiveInitial = useMemo(
@@ -133,7 +160,10 @@ export function Window({
           }
         : undefined,
     onDragStart: () => {
-      setActiveZIndex((current) => current + 1);
+      // Only increment local z-index in unmanaged mode
+      if (!isManaged) {
+        setActiveZIndex((current) => current + 1);
+      }
 
       if (!isSnapped || !preSnapPosition.current || !preSnapSize.current) {
         return;
@@ -153,7 +183,7 @@ export function Window({
           left: snapTarget.x,
           width: snapTarget.width,
           height: snapTarget.height,
-          zIndex: activeZIndex + 1,
+          zIndex: effectiveZIndex + 1,
         }
       : null;
 
@@ -199,16 +229,22 @@ export function Window({
         ...style,
       };
 
+  const handlePointerDown = () => {
+    if (!isManaged || !windowId || !context) return;
+    context.focus(windowId);
+  };
+
   const windowRoot = (
     <div
       className={clsx('window', styles.window, className)}
-      style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: activeZIndex }}
+      style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: effectiveZIndex }}
+      onPointerDown={handlePointerDown}
     >
       <TitleBar
         ref={titleBarRef}
         title={title}
         icon={icon}
-        inactive={inactive}
+        inactive={effectiveInactive}
         isMaximized={isMaximized}
         isMinimized={isMinimized}
         onMinimize={handleMinimize}

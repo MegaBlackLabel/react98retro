@@ -5,6 +5,11 @@
   cursor: move !important;
 }
 
+.titleBar:global(.inactive) {
+  background: linear-gradient(90deg, #808080, #b5b5b5);
+  color: #ffffff;
+}
+
 /* Constrain title bar text line-height so it doesn't expand the bar */
 .titleBar :global(.title-bar-text) {
   margin-right: 0 !important;
