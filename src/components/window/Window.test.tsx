@@ -2,6 +2,8 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Window } from './Window';
+import { WindowManagerContext } from './WindowManagerContext';
+import type { UseWindowManagerResult } from '../../hooks/useWindowManager';
 import styles from './Window.module.css';
 
 function createPointerEvent(type: string, init: PointerEventInit) {
@@ -456,3 +458,135 @@ describe('Window', () => {
     });
   });
 });
+
+  describe('WindowManagerContext integration', () => {
+    function createMockContext(overrides?: Partial<UseWindowManagerResult>): UseWindowManagerResult {
+      const mockWindows = overrides?.windows ?? {};
+      const mockActiveWindowId = overrides?.activeWindowId ?? null;
+      return {
+        windows: mockWindows,
+        activeWindowId: mockActiveWindowId,
+        focus: vi.fn(),
+        minimize: vi.fn(),
+        maximize: vi.fn(),
+        restore: vi.fn(),
+        close: vi.fn(),
+        register: vi.fn(),
+        unregister: vi.fn(),
+        isActive: vi.fn((id: string) => id === mockActiveWindowId),
+      };
+    }
+
+    it('managed window registers on mount', () => {
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      expect(context.register).toHaveBeenCalledWith('win-1');
+    });
+
+    it('managed window unregisters on unmount', () => {
+      const context = createMockContext();
+      const { unmount } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      unmount();
+      expect(context.unregister).toHaveBeenCalledWith('win-1');
+    });
+
+    it('clicking managed window calls focus', () => {
+      const context = createMockContext();
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const windowEl = container.querySelector('.window') as HTMLElement;
+      act(() => {
+        windowEl.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      });
+      expect(context.focus).toHaveBeenCalledWith('win-1');
+    });
+
+    it('clicking button inside managed window also calls focus', () => {
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const closeBtn = screen.getByRole('button', { name: 'Close' });
+      act(() => {
+        closeBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      });
+      expect(context.focus).toHaveBeenCalledWith('win-1');
+    });
+
+    it('unfocused managed window passes inactive to TitleBar', () => {
+      const context = createMockContext({ activeWindowId: 'other-window' });
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+      expect(titleBar).toHaveClass('inactive');
+    });
+
+    it('focused managed window does not pass inactive to TitleBar', () => {
+      const context = createMockContext({ activeWindowId: 'win-1' });
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+      expect(titleBar).not.toHaveClass('inactive');
+    });
+
+    it('unmanaged window uses local z-index (backward compat)', () => {
+      const { container } = render(<Window title="Test" zIndex={42} />);
+      const windowEl = container.firstChild as HTMLElement;
+      expect(windowEl.style.zIndex).toBe('42');
+    });
+
+    it('managed window gets zIndex from context', () => {
+      const context = createMockContext({
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, zIndex: 99 } },
+        activeWindowId: 'win-1',
+      });
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const windowEl = container.querySelector('.window') as HTMLElement;
+      expect(windowEl.style.zIndex).toBe('99');
+    });
+
+    it('managed window does not use local activeZIndex on drag', () => {
+      const context = createMockContext({
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, zIndex: 5 } },
+        activeWindowId: 'win-1',
+      });
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+      const windowEl = container.querySelector('.window') as HTMLElement;
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+      });
+      expect(windowEl.style.zIndex).toBe('5');
+    });
+  });

@@ -6,3 +6,6 @@ export type { WindowProps } from './Window';
 
 export { StatusBar, StatusBarField } from './StatusBar';
 export type { StatusBarProps, StatusBarFieldProps } from './StatusBar';
+
+export { WindowManagerContext, useWindowManagerContext } from './WindowManagerContext';
+

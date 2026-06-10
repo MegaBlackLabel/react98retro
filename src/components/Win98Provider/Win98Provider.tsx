@@ -1,5 +1,7 @@
 import type { ReactNode, CSSProperties } from 'react';
 import '98.css';
+import { useWindowManager } from '../../hooks/useWindowManager';
+import { WindowManagerContext } from '../window/WindowManagerContext';
 
 export interface Win98ProviderProps {
   children: ReactNode;
@@ -12,9 +14,12 @@ export interface Win98ProviderProps {
  * このコンポーネントで囲んだ要素にのみ Win98 スタイルが適用されます。
  */
 export function Win98Provider({ children, style, className }: Win98ProviderProps) {
+  const manager = useWindowManager();
   return (
-    <div className={['win98', className].filter(Boolean).join(' ')} style={style}>
-      {children}
-    </div>
+    <WindowManagerContext.Provider value={manager}>
+      <div className={['win98', className].filter(Boolean).join(' ')} style={style}>
+        {children}
+      </div>
+    </WindowManagerContext.Provider>
   );
 }
