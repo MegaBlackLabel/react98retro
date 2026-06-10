@@ -128,4 +128,65 @@ describe('useWindowManager', () => {
     });
     expect(result.current.windows['win1']).toBeDefined();
   });
+
+  it('defaults autoMoveOnSnap to false', () => {
+    const { result } = renderHook(() => useWindowManager());
+    expect(result.current.autoMoveOnSnap).toBe(false);
+  });
+
+  it('returns configured autoMoveOnSnap value', () => {
+    const { result } = renderHook(() => useWindowManager([], true));
+    expect(result.current.autoMoveOnSnap).toBe(true);
+  });
+
+  it('updateGeometry stores geometry correctly', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+    });
+
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 320, height: 240 });
+  });
+
+  it('getAllGeometries returns all stored geometries', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+      result.current.updateGeometry('win2', { x: 400, y: 60, width: 200, height: 180 });
+    });
+
+    expect(result.current.getAllGeometries()).toEqual({
+      win1: { x: 10, y: 20, width: 320, height: 240 },
+      win2: { x: 400, y: 60, width: 200, height: 180 },
+    });
+  });
+
+  it('requestMove stores move request correctly', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.requestMove('win1', { x: 120, y: 80 });
+    });
+
+    expect(result.current.moveRequests['win1']).toEqual({ x: 120, y: 80 });
+  });
+
+  it('move requests can be cleared', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+
+    act(() => {
+      result.current.requestMove('win1', { x: 120, y: 80 });
+      result.current.requestMove('win2', { x: 240, y: 160 });
+    });
+
+    act(() => {
+      result.current.clearMoveRequest('win1');
+    });
+
+    expect(result.current.moveRequests).toEqual({
+      win2: { x: 240, y: 160 },
+    });
+  });
 });

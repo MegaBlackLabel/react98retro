@@ -413,7 +413,9 @@ describe('Window', () => {
       Object.defineProperty(window, 'innerHeight', { value: 400, writable: true });
       
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
       
       // Wait for the effect to run and state to update
       await waitFor(() => {
@@ -444,7 +446,9 @@ describe('Window', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
       
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
       
       // Wait for the effect to run
       await waitFor(() => {
@@ -463,9 +467,14 @@ describe('Window', () => {
     function createMockContext(overrides?: Partial<UseWindowManagerResult>): UseWindowManagerResult {
       const mockWindows = overrides?.windows ?? {};
       const mockActiveWindowId = overrides?.activeWindowId ?? null;
+      const mockGeometries = overrides?.geometries ?? {};
+      const mockMoveRequests = overrides?.moveRequests ?? {};
       return {
         windows: mockWindows,
         activeWindowId: mockActiveWindowId,
+        geometries: mockGeometries,
+        moveRequests: mockMoveRequests,
+        autoMoveOnSnap: overrides?.autoMoveOnSnap ?? false,
         focus: vi.fn(),
         minimize: vi.fn(),
         maximize: vi.fn(),
@@ -474,6 +483,10 @@ describe('Window', () => {
         register: vi.fn(),
         unregister: vi.fn(),
         isActive: vi.fn((id: string) => id === mockActiveWindowId),
+        updateGeometry: vi.fn(),
+        getAllGeometries: vi.fn(() => mockGeometries),
+        requestMove: vi.fn(),
+        clearMoveRequest: vi.fn(),
       };
     }
 
@@ -588,5 +601,142 @@ describe('Window', () => {
         );
       });
       expect(windowEl.style.zIndex).toBe('5');
+    });
+
+    it('reports geometry to the manager when position or size changes', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" width={320} height={240} initialX={16} initialY={24} />
+        </WindowManagerContext.Provider>
+      );
+
+      await waitFor(() => {
+        expect(context.updateGeometry).toHaveBeenCalledWith('win-1', {
+          x: 16,
+          y: 24,
+          width: 320,
+          height: 240,
+        });
+      });
+    });
+
+    it('applies move requests from the manager and clears them', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext({ moveRequests: { 'win-1': { x: 120, y: 80 } } });
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" width={320} height={240} initialX={16} initialY={24} />
+        </WindowManagerContext.Provider>
+      );
+      const windowEl = container.querySelector('.window') as HTMLElement;
+
+      await waitFor(() => {
+        expect(windowEl.style.left).toBe('120px');
+        expect(windowEl.style.top).toBe('80px');
+        expect(context.clearMoveRequest).toHaveBeenCalledWith('win-1');
+      });
+    });
+
+    it('requests colliding managed windows to move when snap commits with autoMoveOnSnap enabled', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext({
+        geometries: {
+          'win-1': { x: 50, y: 50, width: 400, height: 300 },
+          'win-2': { x: 600, y: 20, width: 200, height: 180 },
+        },
+      });
+      const title = 'Snapping Window';
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title={title} windowId="win-1" width={400} height={300} autoMoveOnSnap />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText(title).closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 1014, clientY: 384, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 1014, clientY: 384, pointerId: 1 }));
+      });
+
+      await waitFor(() => {
+        expect(context.getAllGeometries).toHaveBeenCalled();
+        expect(context.requestMove).toHaveBeenCalledWith('win-2', { x: 304, y: 20 });
+      });
+    });
+
+    it('requests colliding managed windows to move when context autoMoveOnSnap is enabled', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext({
+        autoMoveOnSnap: true,
+        geometries: {
+          'win-1': { x: 50, y: 50, width: 400, height: 300 },
+          'win-2': { x: 600, y: 20, width: 200, height: 180 },
+        },
+      });
+      const title = 'Context Snapping Window';
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title={title} windowId="win-1" width={400} height={300} />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText(title).closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 1014, clientY: 384, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 1014, clientY: 384, pointerId: 1 }));
+      });
+
+      await waitFor(() => {
+        expect(context.getAllGeometries).toHaveBeenCalled();
+        expect(context.requestMove).toHaveBeenCalledWith('win-2', { x: 304, y: 20 });
+      });
+    });
+
+    it('does not request collision moves on snap commit by default', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext({
+        geometries: {
+          'win-1': { x: 50, y: 50, width: 400, height: 300 },
+          'win-2': { x: 600, y: 20, width: 200, height: 180 },
+        },
+      });
+      const title = 'Snapping Window';
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title={title} windowId="win-1" width={400} height={300} />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText(title).closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 1014, clientY: 384, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 1014, clientY: 384, pointerId: 1 }));
+      });
+
+      await waitFor(() => {
+        expect(context.requestMove).not.toHaveBeenCalled();
+      });
     });
   });

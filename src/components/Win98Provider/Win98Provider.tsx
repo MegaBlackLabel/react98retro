@@ -7,14 +7,15 @@ export interface Win98ProviderProps {
   children: ReactNode;
   style?: CSSProperties;
   className?: string;
+  autoMoveOnSnap?: boolean;
 }
 
 /**
  * Win98Provider — 98.css のスタイルを .win98 クラス配下にスコープするラッパー。
  * このコンポーネントで囲んだ要素にのみ Win98 スタイルが適用されます。
  */
-export function Win98Provider({ children, style, className }: Win98ProviderProps) {
-  const manager = useWindowManager();
+export function Win98Provider({ children, style, className, autoMoveOnSnap = false }: Win98ProviderProps) {
+  const manager = useWindowManager([], autoMoveOnSnap);
   return (
     <WindowManagerContext.Provider value={manager}>
       <div className={['win98', className].filter(Boolean).join(' ')} style={style}>

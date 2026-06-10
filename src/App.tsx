@@ -41,7 +41,7 @@ function App() {
   };
 
   return (
-    <Win98Provider style={{ width: '100vw', height: '100vh', background: '#008080', position: 'relative', overflow: 'hidden' }}>
+    <Win98Provider autoMoveOnSnap style={{ width: '100vw', height: '100vh', background: '#008080', position: 'relative', overflow: 'hidden' }}>
       {EXPLORERS.map((explorer) =>
         openExplorers.has(explorer.id) ? (
           <FileExplorer

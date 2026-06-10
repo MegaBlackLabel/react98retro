@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { TitleBar } from './TitleBar';
 import { useDraggable } from '../../hooks/useDraggable';
 import { useResizable } from '../../hooks/useResizable';
+import { findCollisions } from '../../hooks/collision';
 import { useWindowManagerContext } from './WindowManagerContext';
 import type { ResizeDirection } from '../../hooks/useResizable';
 import styles from './Window.module.css';
@@ -27,6 +28,7 @@ export interface WindowProps {
   onClose?: () => void;
   snapEnabled?: boolean;
   snapThreshold?: number;
+  autoMoveOnSnap?: boolean;
   style?: CSSProperties;
   className?: string;
   zIndex?: number;
@@ -77,6 +79,7 @@ export function Window({
   onClose,
   snapEnabled = true,
   snapThreshold = 20,
+  autoMoveOnSnap: autoMoveOnSnapProp,
   style,
   className,
   zIndex,
@@ -84,6 +87,7 @@ export function Window({
 }: WindowProps) {
   const context = useWindowManagerContext();
   const isManaged = context !== null;
+  const autoMoveOnSnap = autoMoveOnSnapProp ?? context?.autoMoveOnSnap ?? false;
   const generatedId = useId();
   const effectiveWindowId = isManaged ? (windowId ?? generatedId) : undefined;
 
@@ -96,6 +100,11 @@ export function Window({
   const [isSnapped, setIsSnapped] = useState(false);
   const register = context?.register;
   const unregister = context?.unregister;
+  const updateGeometry = context?.updateGeometry;
+  const moveRequests = context?.moveRequests;
+  const clearMoveRequest = context?.clearMoveRequest;
+  const getAllGeometries = context?.getAllGeometries;
+  const requestMove = context?.requestMove;
 
   // Managed mode: register/unregister with window manager
   useEffect(() => {
@@ -139,6 +148,27 @@ export function Window({
     reconcileOnResize: true, // Re-clamp window when viewport changes after mount
   });
 
+  useEffect(() => {
+    if (!isManaged || !effectiveWindowId || !updateGeometry) return;
+
+    updateGeometry(effectiveWindowId, {
+      x: position.x,
+      y: position.y,
+      width: size.width,
+      height: size.height,
+    });
+  }, [isManaged, effectiveWindowId, updateGeometry, position.x, position.y, size.width, size.height]);
+
+  useEffect(() => {
+    if (!isManaged || !effectiveWindowId || !moveRequests || !clearMoveRequest) return;
+
+    const moveRequest = moveRequests[effectiveWindowId];
+    if (!moveRequest) return;
+
+    setPosition(moveRequest);
+    clearMoveRequest(effectiveWindowId);
+  }, [isManaged, effectiveWindowId, moveRequests, clearMoveRequest]);
+
   // useDraggable uses the LIVE size from useResizable for bounds, not the initial size
   const { dragHandleProps, snapTarget } = useDraggable({
     initialX: responsiveInitial.x,
@@ -157,6 +187,23 @@ export function Window({
             setPosition({ x: target.x, y: target.y });
             setSize({ width: target.width, height: target.height });
             setIsSnapped(true);
+
+            if (autoMoveOnSnap && isManaged && effectiveWindowId && getAllGeometries && requestMove) {
+              const allGeometries = { ...getAllGeometries() };
+              delete allGeometries[effectiveWindowId];
+
+              findCollisions(
+                {
+                  x: target.x,
+                  y: target.y,
+                  width: target.width,
+                  height: target.height,
+                },
+                allGeometries,
+              ).forEach(({ id, escapePosition }) => {
+                requestMove(id, escapePosition);
+              });
+            }
           }
         : undefined,
     onDragStart: () => {
