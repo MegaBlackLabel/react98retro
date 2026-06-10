@@ -87,8 +87,8 @@ describe('WindowManagerContext', () => {
   it('only one window active at a time with real useWindowManager + Win98Provider', async () => {
     const { container } = render(
       <Win98Provider>
-        <Window title="Window 1" id="win-1" />
-        <Window title="Window 2" id="win-2" />
+        <Window title="Window 1" windowId="win-1" />
+        <Window title="Window 2" windowId="win-2" />
       </Win98Provider>,
     );
 

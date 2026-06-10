@@ -44,6 +44,7 @@ export function useWindowManager(windowIds: string[] = []): UseWindowManagerResu
       return { ...prev, [id]: { ...prev[id], zIndex: maxZ + 1 } };
     });
     setActiveWindowId(id);
+    activeWindowIdRef.current = id;
   }, []);
 
   const minimize = useCallback((id: string) => {
@@ -90,7 +91,11 @@ export function useWindowManager(windowIds: string[] = []): UseWindowManagerResu
 
       return next;
     });
-    setActiveWindowId((current) => current ?? id); // Auto-focus first window
+    setActiveWindowId((current) => {
+      const newActive = current ?? id;
+      activeWindowIdRef.current = newActive;
+      return newActive;
+    });
   }, []);
 
   const unregister = useCallback((id: string) => {

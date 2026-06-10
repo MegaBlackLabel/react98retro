@@ -481,7 +481,7 @@ describe('Window', () => {
       const context = createMockContext();
       render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       expect(context.register).toHaveBeenCalledWith('win-1');
@@ -491,7 +491,7 @@ describe('Window', () => {
       const context = createMockContext();
       const { unmount } = render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       unmount();
@@ -502,7 +502,7 @@ describe('Window', () => {
       const context = createMockContext();
       const { container } = render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const windowEl = container.querySelector('.window') as HTMLElement;
@@ -516,7 +516,7 @@ describe('Window', () => {
       const context = createMockContext();
       render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const closeBtn = screen.getByRole('button', { name: 'Close' });
@@ -530,7 +530,7 @@ describe('Window', () => {
       const context = createMockContext({ activeWindowId: 'other-window' });
       render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
@@ -541,7 +541,7 @@ describe('Window', () => {
       const context = createMockContext({ activeWindowId: 'win-1' });
       render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
@@ -561,7 +561,7 @@ describe('Window', () => {
       });
       const { container } = render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const windowEl = container.querySelector('.window') as HTMLElement;
@@ -575,7 +575,7 @@ describe('Window', () => {
       });
       const { container } = render(
         <WindowManagerContext.Provider value={context}>
-          <Window title="Test" id="win-1" />
+          <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
       const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;

@@ -30,7 +30,7 @@ export interface WindowProps {
   style?: CSSProperties;
   className?: string;
   zIndex?: number;
-  id?: string;
+  windowId?: string;
 }
 
 function getResponsiveSize(
@@ -80,12 +80,12 @@ export function Window({
   style,
   className,
   zIndex,
-  id,
+  windowId,
 }: WindowProps) {
   const context = useWindowManagerContext();
   const isManaged = context !== null;
   const generatedId = useId();
-  const windowId = isManaged ? (id ?? generatedId) : undefined;
+  const effectiveWindowId = isManaged ? (windowId ?? generatedId) : undefined;
 
   const titleBarRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
@@ -99,16 +99,16 @@ export function Window({
 
   // Managed mode: register/unregister with window manager
   useEffect(() => {
-    if (!isManaged || !windowId || !register || !unregister) return;
-    register(windowId);
+    if (!isManaged || !effectiveWindowId || !register || !unregister) return;
+    register(effectiveWindowId);
     return () => {
-      unregister(windowId);
+      unregister(effectiveWindowId);
     };
-  }, [isManaged, windowId, register, unregister]);
+  }, [isManaged, effectiveWindowId, register, unregister]);
 
   // Managed mode: get z-index and active state from context
-  const managedZIndex = isManaged && windowId && context ? (context.windows[windowId]?.zIndex ?? 1) : undefined;
-  const managedIsActive = isManaged && windowId && context ? context.isActive(windowId) : undefined;
+  const managedZIndex = isManaged && effectiveWindowId && context ? (context.windows[effectiveWindowId]?.zIndex ?? 1) : undefined;
+  const managedIsActive = isManaged && effectiveWindowId && context ? context.isActive(effectiveWindowId) : undefined;
 
   // Use managed z-index when available, otherwise fall back to local state
   const effectiveZIndex = managedZIndex !== undefined ? managedZIndex : activeZIndex;
@@ -230,8 +230,8 @@ export function Window({
       };
 
   const handlePointerDown = () => {
-    if (!isManaged || !windowId || !context) return;
-    context.focus(windowId);
+    if (!isManaged || !effectiveWindowId || !context) return;
+    context.focus(effectiveWindowId);
   };
 
   const windowRoot = (
