@@ -151,13 +151,22 @@ export function Window({
   useEffect(() => {
     if (!isManaged || !effectiveWindowId || !updateGeometry) return;
 
-    updateGeometry(effectiveWindowId, {
-      x: position.x,
-      y: position.y,
-      width: size.width,
-      height: size.height,
-    });
-  }, [isManaged, effectiveWindowId, updateGeometry, position.x, position.y, size.width, size.height]);
+    if (isMaximized) {
+      updateGeometry(effectiveWindowId, {
+        x: 0,
+        y: 0,
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    } else {
+      updateGeometry(effectiveWindowId, {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+      });
+    }
+  }, [isManaged, effectiveWindowId, updateGeometry, position.x, position.y, size.width, size.height, isMaximized]);
 
   useEffect(() => {
     if (!isManaged || !effectiveWindowId || !moveRequests || !clearMoveRequest) return;
@@ -165,9 +174,14 @@ export function Window({
     const moveRequest = moveRequests[effectiveWindowId];
     if (!moveRequest) return;
 
-    setPosition(moveRequest);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const clampedX = Math.max(0, Math.min(moveRequest.x, viewportWidth - size.width));
+    const clampedY = Math.max(0, Math.min(moveRequest.y, viewportHeight - size.height));
+
+    setPosition({ x: clampedX, y: clampedY });
     clearMoveRequest(effectiveWindowId);
-  }, [isManaged, effectiveWindowId, moveRequests, clearMoveRequest]);
+  }, [isManaged, effectiveWindowId, moveRequests, clearMoveRequest, size.width, size.height]);
 
   // useDraggable uses the LIVE size from useResizable for bounds, not the initial size
   const { dragHandleProps, snapTarget } = useDraggable({

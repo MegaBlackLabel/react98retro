@@ -623,6 +623,26 @@ describe('Window', () => {
       });
     });
 
+    it('reports viewport geometry to the manager when maximized', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" width={320} height={240} initialX={16} initialY={24} maximized />
+        </WindowManagerContext.Provider>,
+      );
+
+      await waitFor(() => {
+        expect(context.updateGeometry).toHaveBeenCalledWith('win-1', {
+          x: 0,
+          y: 0,
+          width: 1024,
+          height: 768,
+        });
+      });
+    });
+
     it('applies move requests from the manager and clears them', async () => {
       Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
       Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
@@ -637,6 +657,24 @@ describe('Window', () => {
       await waitFor(() => {
         expect(windowEl.style.left).toBe('120px');
         expect(windowEl.style.top).toBe('80px');
+        expect(context.clearMoveRequest).toHaveBeenCalledWith('win-1');
+      });
+    });
+
+    it('clamps move requests from the manager to the viewport', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 500, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 400, writable: true });
+      const context = createMockContext({ moveRequests: { 'win-1': { x: 999, y: -10 } } });
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" width={320} height={240} initialX={16} initialY={24} />
+        </WindowManagerContext.Provider>,
+      );
+      const windowEl = container.querySelector('.window') as HTMLElement;
+
+      await waitFor(() => {
+        expect(windowEl.style.left).toBe('180px');
+        expect(windowEl.style.top).toBe('0px');
         expect(context.clearMoveRequest).toHaveBeenCalledWith('win-1');
       });
     });
