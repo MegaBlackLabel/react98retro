@@ -18,6 +18,7 @@ function ContextConsumer() {
         <>
           <span data-testid="windows-count">{Object.keys(manager.windows).length}</span>
           <span data-testid="active-window">{manager.activeWindowId ?? 'none'}</span>
+          <span data-testid="auto-move-on-snap">{String(manager.autoMoveOnSnap)}</span>
           <button data-testid="register-btn" onClick={() => manager.register('win1')}>
             Register
           </button>
@@ -56,6 +57,17 @@ describe('WindowManagerContext', () => {
     expect(manager).toHaveTextContent('has-manager');
     expect(screen.getByTestId('windows-count')).toHaveTextContent('0');
     expect(screen.getByTestId('active-window')).toHaveTextContent('none');
+    expect(screen.getByTestId('auto-move-on-snap')).toHaveTextContent('false');
+  });
+
+  it('passes autoMoveOnSnap configuration through Win98Provider context', () => {
+    render(
+      <Win98Provider autoMoveOnSnap>
+        <ContextConsumer />
+      </Win98Provider>,
+    );
+
+    expect(screen.getByTestId('auto-move-on-snap')).toHaveTextContent('true');
   });
 
   it('register and focus update the manager state', async () => {

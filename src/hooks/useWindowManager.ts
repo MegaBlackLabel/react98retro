@@ -7,9 +7,24 @@ export interface WindowState {
   zIndex: number;
 }
 
+export interface WindowGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MoveRequest {
+  x: number;
+  y: number;
+}
+
 export interface UseWindowManagerResult {
   windows: Record<string, WindowState>;
   activeWindowId: string | null;
+  geometries: Record<string, WindowGeometry>;
+  moveRequests: Record<string, MoveRequest>;
+  autoMoveOnSnap: boolean;
   focus: (id: string) => void;
   minimize: (id: string) => void;
   maximize: (id: string) => void;
@@ -18,9 +33,13 @@ export interface UseWindowManagerResult {
   register: (id: string) => void;
   unregister: (id: string) => void;
   isActive: (id: string) => boolean;
+  updateGeometry: (id: string, geometry: WindowGeometry) => void;
+  getAllGeometries: () => Record<string, WindowGeometry>;
+  requestMove: (id: string, position: MoveRequest) => void;
+  clearMoveRequest: (id: string) => void;
 }
 
-export function useWindowManager(windowIds: string[] = []): UseWindowManagerResult {
+export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = false): UseWindowManagerResult {
   const [windows, setWindows] = useState<Record<string, WindowState>>(() => {
     const initial: Record<string, WindowState> = {};
     windowIds.forEach((id, i) => {
@@ -30,6 +49,8 @@ export function useWindowManager(windowIds: string[] = []): UseWindowManagerResu
   });
 
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
+  const [geometries, setGeometries] = useState<Record<string, WindowGeometry>>({});
+  const [moveRequests, setMoveRequests] = useState<Record<string, MoveRequest>>({});
   const activeWindowIdRef = useRef(activeWindowId);
   activeWindowIdRef.current = activeWindowId;
 
@@ -110,5 +131,41 @@ export function useWindowManager(windowIds: string[] = []): UseWindowManagerResu
 
   const isActive = useCallback((id: string) => activeWindowId === id, [activeWindowId]);
 
-  return { windows, activeWindowId, focus, minimize, maximize, restore, close, register, unregister, isActive };
+  const updateGeometry = useCallback((id: string, geometry: WindowGeometry) => {
+    setGeometries((prev) => ({ ...prev, [id]: geometry }));
+  }, []);
+
+  const getAllGeometries = useCallback(() => ({ ...geometries }), [geometries]);
+
+  const requestMove = useCallback((id: string, position: MoveRequest) => {
+    setMoveRequests((prev) => ({ ...prev, [id]: position }));
+  }, []);
+
+  const clearMoveRequest = useCallback((id: string) => {
+    setMoveRequests((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  return {
+    windows,
+    activeWindowId,
+    geometries,
+    moveRequests,
+    autoMoveOnSnap,
+    focus,
+    minimize,
+    maximize,
+    restore,
+    close,
+    register,
+    unregister,
+    isActive,
+    updateGeometry,
+    getAllGeometries,
+    requestMove,
+    clearMoveRequest,
+  };
 }
