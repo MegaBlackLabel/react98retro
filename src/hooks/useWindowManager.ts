@@ -135,7 +135,7 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
     setGeometries((prev) => ({ ...prev, [id]: geometry }));
   }, []);
 
-  const getAllGeometries = useCallback(() => geometries, [geometries]);
+  const getAllGeometries = useCallback(() => ({ ...geometries }), [geometries]);
 
   const requestMove = useCallback((id: string, position: MoveRequest) => {
     setMoveRequests((prev) => ({ ...prev, [id]: position }));

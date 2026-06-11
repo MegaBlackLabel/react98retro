@@ -163,6 +163,19 @@ describe('useWindowManager', () => {
     });
   });
 
+  it('getAllGeometries returns a copy so callers cannot mutate internal state', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+    });
+
+    const returnedGeometries = result.current.getAllGeometries();
+    delete returnedGeometries.win1;
+
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 320, height: 240 });
+  });
+
   it('requestMove stores move request correctly', () => {
     const { result } = renderHook(() => useWindowManager(['win1']));
 
