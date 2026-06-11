@@ -6,7 +6,7 @@ import { Win98Provider } from '../src/components/Win98Provider';
 
 const preview: Preview = {
   decorators: [
-    (Story) => React.createElement(Win98Provider, null, React.createElement(Story)),
+    (Story) => React.createElement(Win98Provider, { autoMoveOnSnap: true }, React.createElement(Story)),
   ],
   parameters: {
     controls: {
