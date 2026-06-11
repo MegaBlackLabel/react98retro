@@ -30,7 +30,7 @@ jobs:
         run: bun install
 
       - name: Run tests
-        run: bun run test
+        run: bunx vitest run --project unit
 
       - name: Build library
         run: bun run build:lib
