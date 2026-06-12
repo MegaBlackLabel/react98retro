@@ -179,8 +179,12 @@ export function Window({
     const clampedX = Math.max(0, Math.min(moveRequest.x, viewportWidth - size.width));
     const clampedY = Math.max(0, Math.min(moveRequest.y, viewportHeight - size.height));
 
-    setPosition({ x: clampedX, y: clampedY });
-    clearMoveRequest(effectiveWindowId);
+    const frame = window.requestAnimationFrame(() => {
+      setPosition({ x: clampedX, y: clampedY });
+      clearMoveRequest(effectiveWindowId);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [isManaged, effectiveWindowId, moveRequests, clearMoveRequest, size.width, size.height]);
 
   // useDraggable uses the LIVE size from useResizable for bounds, not the initial size

@@ -147,9 +147,23 @@ export function useResizable(options?: {
 
   // 最新の position と size を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
-  positionRef.current = position;
   const sizeRef = useRef(size);
-  sizeRef.current = size;
+
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+
+  const listenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+  }>({
+    move: () => {},
+    up: () => {},
+  });
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -193,12 +207,19 @@ export function useResizable(options?: {
     (e: PointerEvent) => {
       if (!resizeState.current || e.pointerId !== resizeState.current.pointerId) return;
       resizeState.current.target.releasePointerCapture(e.pointerId);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
       resizeState.current = null;
     },
     [onPointerMove],
   );
+
+  useEffect(() => {
+    listenersRef.current = {
+      move: onPointerMove,
+      up: onPointerUp,
+    };
+  }, [onPointerMove, onPointerUp]);
 
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({
@@ -218,11 +239,11 @@ export function useResizable(options?: {
           pointerId: e.pointerId,
           target: e.currentTarget,
         };
-        window.addEventListener('pointermove', onPointerMove);
-        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointermove', listenersRef.current.move);
+        window.addEventListener('pointerup', listenersRef.current.up);
       },
     }),
-    [onPointerMove, onPointerUp],
+    [onPointerMove],
   );
 
   return { size, position, setSize: setSizeConstrained, getResizeHandleProps };

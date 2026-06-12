@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface WindowState {
   id: string;
@@ -52,7 +52,10 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
   const [geometries, setGeometries] = useState<Record<string, WindowGeometry>>({});
   const [moveRequests, setMoveRequests] = useState<Record<string, MoveRequest>>({});
   const activeWindowIdRef = useRef(activeWindowId);
-  activeWindowIdRef.current = activeWindowId;
+
+  useEffect(() => {
+    activeWindowIdRef.current = activeWindowId;
+  }, [activeWindowId]);
 
   const getMaxZIndex = (state: Record<string, WindowState>): number =>
     Math.max(0, ...Object.values(state).map((w) => w.zIndex));

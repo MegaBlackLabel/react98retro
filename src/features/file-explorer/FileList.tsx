@@ -90,8 +90,7 @@ function compareRows(left: FileRow, right: FileRow, sort: TableSortState<FileRow
   const groupDifference = groupRank(left._node) - groupRank(right._node);
   if (groupDifference !== 0) return groupDifference;
 
-  let difference = 0;
-
+  let difference: number;
   switch (sort.columnKey) {
     case 'name':
       difference = compareText(left.name, right.name);

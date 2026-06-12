@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FileExplorer } from './FileExplorer';
 
 const meta: Meta<typeof FileExplorer> = {

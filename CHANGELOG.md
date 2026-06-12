@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-06-12
+
+### Added
+
+- Unit tests for previously uncovered components and modules: `FieldRow`, `Win98Provider`, `Menu`, `SplitButton`, `FileTree`, `Icon`, icon mappings, and public barrel exports.
+- Additional `FileExplorer` tests for status-bar object count, selected file size, and address-bar path.
+- Expanded `components/index.test.ts` to assert exports of `FieldRow`, `Win98Provider`, `Window`, `Button`, `Menu`, and `SplitButton`.
+
+### Changed
+
+- Simplified `AddressBar` to use the controlled `value` prop directly instead of internal mirrored state.
+- Refined drag, resize, and window-manager hooks to update refs inside `useEffect`, avoiding stale closures during pointer events.
+- Updated the publish workflow to run only unit tests, removing the Playwright dependency from package releases.
+- Bumped package version to 0.2.2.
+
+### Fixed
+
+- `Window` now schedules programmatic move requests with `requestAnimationFrame` before updating position and clearing the request.
+- `useResizable` reliably removes the active pointer listeners on resize end.
+- `FileList` sorting comparison now initializes the difference explicitly for each column case.
+- `useFileSystem` derives the current node and display path directly from the latest filesystem state, keeping the address bar in sync after mutations.
+
 ## [0.2.1] - 2026-06-11
 
 ### Added
