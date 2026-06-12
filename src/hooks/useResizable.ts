@@ -147,9 +147,20 @@ export function useResizable(options?: {
 
   // 最新の position と size を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
-  positionRef.current = position;
   const sizeRef = useRef(size);
+
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
+  positionRef.current = position;
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
   sizeRef.current = size;
+
+  const listenersRef = useRef<{
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+  }>({
+    move: () => {},
+    up: () => {},
+  });
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -193,12 +204,18 @@ export function useResizable(options?: {
     (e: PointerEvent) => {
       if (!resizeState.current || e.pointerId !== resizeState.current.pointerId) return;
       resizeState.current.target.releasePointerCapture(e.pointerId);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
       resizeState.current = null;
     },
-    [onPointerMove],
+    [],
   );
+
+  // eslint-disable-next-line react-hooks/refs -- keep pointer listeners fresh before effects run
+  listenersRef.current = {
+    move: onPointerMove,
+    up: onPointerUp,
+  };
 
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({
@@ -218,11 +235,11 @@ export function useResizable(options?: {
           pointerId: e.pointerId,
           target: e.currentTarget,
         };
-        window.addEventListener('pointermove', onPointerMove);
-        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointermove', listenersRef.current.move);
+        window.addEventListener('pointerup', listenersRef.current.up);
       },
     }),
-    [onPointerMove, onPointerUp],
+    [],
   );
 
   return { size, position, setSize: setSizeConstrained, getResizeHandleProps };

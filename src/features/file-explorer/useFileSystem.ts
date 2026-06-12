@@ -315,7 +315,7 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
   const clipboardModeRef = useRef<ClipboardMode | null>(null);
 
   const findNode = useCallback((id: string, nodes: FSNode[] = fsRef.current): FSNode | null => findNodeById(id, nodes), []);
-  const currentNode = findNode(currentPath);
+  const currentNode = findNodeById(currentPath, fs);
   const currentChildren = currentNode?.children ?? [];
 
   const navigate = useCallback((id: string) => {
@@ -359,7 +359,7 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
   const goUp = useCallback(() => {
     const parent = findNode(currentPathRef.current)?.id ? getParentId(currentPathRef.current) : null;
     if (parent) navigate(parent);
-  }, [currentPath, findNode, navigate]);
+  }, [findNode, navigate]);
 
   const createFolder = useCallback((parentId: string, name: string) => {
     const parent = findNode(parentId);
@@ -504,7 +504,7 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
     }
 
     const nextTarget = { ...workingTarget.container, children: pastedChildren };
-    let nextFs = replaceNode(workingFs, workingTarget.containerId, nextTarget);
+    const nextFs = replaceNode(workingFs, workingTarget.containerId, nextTarget);
 
     if (mode === 'cut') {
       fsRef.current = nextFs;
@@ -531,11 +531,11 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
   }, [findNode]);
 
   const getDisplayPath = useCallback((): string => {
-    const node = findNode(currentPath);
+    const node = findNodeById(currentPath, fs);
     if (!node) return currentPath;
     if (node.id === 'my-computer') return 'マイコンピュータ';
     return node.id;
-  }, [currentPath, findNode]);
+  }, [currentPath, fs]);
 
   return {
     fs,

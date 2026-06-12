@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import styles from './AddressBar.module.css';
 
@@ -25,16 +24,8 @@ export function AddressBar({
   className,
   ...rest
 }: AddressBarProps) {
-  const [selectValue, setSelectValue] = useState(value);
-
-  // Sync controlled value
-  useEffect(() => {
-    setSelectValue(value);
-  }, [value]);
-
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
-    setSelectValue(newValue);
     onChange?.(newValue);
     onNavigate?.(newValue);
   };
@@ -51,7 +42,7 @@ export function AddressBar({
       <span className={styles.label}>{label}</span>
       <select
         className={styles.select}
-        value={selectValue}
+        value={value}
         onChange={handleChange}
         aria-label={label}
       >

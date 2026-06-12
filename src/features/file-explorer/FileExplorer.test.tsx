@@ -244,4 +244,31 @@ describe('FileExplorer', () => {
     // Menu should close
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
+
+  it('shows initial object count in status bar', () => {
+    render(<FileExplorer />);
+    expect(screen.getByText(/個のオブジェクト/)).toBeInTheDocument();
+  });
+
+  it('shows object count after navigation to drive', () => {
+    render(<FileExplorer />);
+    navigateToDrive();
+    expect(screen.getByText(/5 個のオブジェクト/)).toBeInTheDocument();
+  });
+
+  it('shows selected file size in status bar', () => {
+    render(<FileExplorer />);
+    navigateToDrive();
+    clickRow('Autoexec.bat');
+    expect(screen.getByText(/バイト/)).toBeInTheDocument();
+  });
+
+  it('shows current path in address bar', () => {
+    render(<FileExplorer />);
+    const addressSelect = screen.getByLabelText('アドレス(D):');
+    expect(addressSelect).toHaveValue('マイコンピュータ');
+
+    navigateToDrive();
+    expect(addressSelect).toHaveValue('C:');
+  });
 });

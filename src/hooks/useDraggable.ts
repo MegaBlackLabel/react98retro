@@ -63,14 +63,6 @@ export function useDraggable(options?: {
     onSnapCommit: options?.onSnapCommit,
     onDragStart: options?.onDragStart,
   });
-  snapOptionsRef.current = {
-    snapEnabled: options?.snapEnabled,
-    snapThreshold: options?.snapThreshold ?? 20,
-    minWidth: options?.minWidth ?? 200,
-    minHeight: options?.minHeight ?? 100,
-    onSnapCommit: options?.onSnapCommit,
-    onDragStart: options?.onDragStart,
-  };
 
   // Calculate clamped initial position
   const initialPosition = useMemo(() => {
@@ -129,10 +121,24 @@ export function useDraggable(options?: {
 
   // 最新の position を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
-  positionRef.current = position;
 
   const snapTargetRef = useRef<SnapTarget | null>(null);
-  snapTargetRef.current = snapTarget;
+
+  // eslint-disable-next-line react-hooks/refs -- keep pointer handlers fresh before effects run
+  snapOptionsRef.current = {
+    snapEnabled: options?.snapEnabled,
+    snapThreshold: options?.snapThreshold ?? 20,
+    minWidth: options?.minWidth ?? 200,
+    minHeight: options?.minHeight ?? 100,
+    onSnapCommit: options?.onSnapCommit,
+    onDragStart: options?.onDragStart,
+  };
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
+  positionRef.current = position;
+
+  useEffect(() => {
+    snapTargetRef.current = snapTarget;
+  }, [snapTarget]);
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {

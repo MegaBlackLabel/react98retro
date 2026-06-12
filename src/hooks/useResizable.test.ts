@@ -1,9 +1,11 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useResizable } from './useResizable';
 import type { ResizeDirection } from './useResizable';
 
 const ALL_DIRECTIONS: ResizeDirection[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+const source = readFileSync(`${process.cwd()}/src/hooks/useResizable.ts`, 'utf8');
 
 describe('useResizable', () => {
   it('returns default initial size', () => {
@@ -39,6 +41,20 @@ describe('useResizable', () => {
     expect(result.current.getResizeHandleProps('n').style.cursor).toBe('n-resize');
     expect(result.current.getResizeHandleProps('se').style.cursor).toBe('se-resize');
     expect(result.current.getResizeHandleProps('w').style.cursor).toBe('w-resize');
+  });
+
+  describe('synchronous ref freshness', () => {
+    it('updates position and size refs during render', () => {
+      expect(source).toContain('positionRef.current = position;');
+      expect(source).toContain('sizeRef.current = size;');
+      expect(source).not.toMatch(/useEffect\(\(\) => \{\s*positionRef\.current = position;\s*\}, \[position\]\);/);
+      expect(source).not.toMatch(/useEffect\(\(\) => \{\s*sizeRef\.current = size;\s*\}, \[size\]\);/);
+    });
+
+    it('updates pointer listeners ref during render', () => {
+      expect(source).toMatch(/listenersRef\.current = \{\s*move: onPointerMove,\s*up: onPointerUp,\s*\};/);
+      expect(source).not.toMatch(/useEffect\(\(\) => \{\s*listenersRef\.current = \{\s*move: onPointerMove,\s*up: onPointerUp,\s*\};\s*\}, \[onPointerMove, onPointerUp\]\);/);
+    });
   });
 
   describe('viewport clamping', () => {
@@ -112,7 +128,9 @@ describe('useResizable', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
 
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
 
       // Wait for the effect to run
       await waitFor(() => {
@@ -142,7 +160,9 @@ describe('useResizable', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
 
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
 
       // Wait for the effect to run
       await waitFor(() => {
@@ -173,7 +193,9 @@ describe('useResizable', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
 
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
 
       // Wait a bit to ensure no updates happen
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -206,7 +228,9 @@ describe('useResizable', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
 
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
 
       // Wait a bit to ensure no updates happen
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -238,7 +262,9 @@ describe('useResizable', () => {
       Object.defineProperty(window, 'innerHeight', { value: 300, writable: true });
 
       // Trigger resize event
-      window.dispatchEvent(new Event('resize'));
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
 
       // Wait for the callback to be called
       await waitFor(() => {
