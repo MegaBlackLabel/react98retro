@@ -147,7 +147,9 @@ describe('Menu', () => {
 
     fireEvent.mouseLeave(parent!);
     fireEvent.mouseEnter(menus[menus.length - 1]);
-    vi.advanceTimersByTime(200);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(screen.getByText('Child')).toBeInTheDocument();
   });
 });

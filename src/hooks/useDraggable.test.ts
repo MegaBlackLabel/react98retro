@@ -1,10 +1,13 @@
 import { renderHook, act } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useDraggable } from './useDraggable';
 
 function createPointerEvent(type: string, init: PointerEventInit) {
   return new PointerEvent(type, init);
 }
+
+const source = readFileSync(`${process.cwd()}/src/hooks/useDraggable.ts`, 'utf8');
 
 describe('useDraggable', () => {
   it('returns default initial position', () => {
@@ -28,6 +31,18 @@ describe('useDraggable', () => {
   it('exposes dragHandleProps with onPointerDown', () => {
     const { result } = renderHook(() => useDraggable());
     expect(typeof result.current.dragHandleProps.onPointerDown).toBe('function');
+  });
+
+  describe('synchronous ref freshness', () => {
+    it('updates snap options ref during render', () => {
+      expect(source).toMatch(/snapOptionsRef\.current = \{\s*snapEnabled: options\?\.snapEnabled,\s*snapThreshold: options\?\.snapThreshold \?\? 20,\s*minWidth: options\?\.minWidth \?\? 200,\s*minHeight: options\?\.minHeight \?\? 100,\s*onSnapCommit: options\?\.onSnapCommit,\s*onDragStart: options\?\.onDragStart,\s*\};/);
+      expect(source).not.toMatch(/useEffect\(\(\) => \{\s*snapOptionsRef\.current = \{/);
+    });
+
+    it('updates position ref during render', () => {
+      expect(source).toContain('positionRef.current = position;');
+      expect(source).not.toMatch(/useEffect\(\(\) => \{\s*positionRef\.current = position;\s*\}, \[position\]\);/);
+    });
   });
 
   it('captures the pointer on pointerdown', () => {

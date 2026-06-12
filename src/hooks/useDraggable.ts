@@ -124,27 +124,17 @@ export function useDraggable(options?: {
 
   const snapTargetRef = useRef<SnapTarget | null>(null);
 
-  useEffect(() => {
-    snapOptionsRef.current = {
-      snapEnabled: options?.snapEnabled,
-      snapThreshold: options?.snapThreshold ?? 20,
-      minWidth: options?.minWidth ?? 200,
-      minHeight: options?.minHeight ?? 100,
-      onSnapCommit: options?.onSnapCommit,
-      onDragStart: options?.onDragStart,
-    };
-  }, [
-    options?.snapEnabled,
-    options?.snapThreshold,
-    options?.minWidth,
-    options?.minHeight,
-    options?.onSnapCommit,
-    options?.onDragStart,
-  ]);
-
-  useEffect(() => {
-    positionRef.current = position;
-  }, [position]);
+  // eslint-disable-next-line react-hooks/refs -- keep pointer handlers fresh before effects run
+  snapOptionsRef.current = {
+    snapEnabled: options?.snapEnabled,
+    snapThreshold: options?.snapThreshold ?? 20,
+    minWidth: options?.minWidth ?? 200,
+    minHeight: options?.minHeight ?? 100,
+    onSnapCommit: options?.onSnapCommit,
+    onDragStart: options?.onDragStart,
+  };
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
+  positionRef.current = position;
 
   useEffect(() => {
     snapTargetRef.current = snapTarget;

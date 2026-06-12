@@ -149,13 +149,10 @@ export function useResizable(options?: {
   const positionRef = useRef(position);
   const sizeRef = useRef(size);
 
-  useEffect(() => {
-    positionRef.current = position;
-  }, [position]);
-
-  useEffect(() => {
-    sizeRef.current = size;
-  }, [size]);
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
+  positionRef.current = position;
+  // eslint-disable-next-line react-hooks/refs -- keep pointerdown reads fresh before effects run
+  sizeRef.current = size;
 
   const listenersRef = useRef<{
     move: (e: PointerEvent) => void;
@@ -211,15 +208,14 @@ export function useResizable(options?: {
       window.removeEventListener('pointerup', listenersRef.current.up);
       resizeState.current = null;
     },
-    [onPointerMove],
+    [],
   );
 
-  useEffect(() => {
-    listenersRef.current = {
-      move: onPointerMove,
-      up: onPointerUp,
-    };
-  }, [onPointerMove, onPointerUp]);
+  // eslint-disable-next-line react-hooks/refs -- keep pointer listeners fresh before effects run
+  listenersRef.current = {
+    move: onPointerMove,
+    up: onPointerUp,
+  };
 
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({
@@ -243,7 +239,7 @@ export function useResizable(options?: {
         window.addEventListener('pointerup', listenersRef.current.up);
       },
     }),
-    [onPointerMove],
+    [],
   );
 
   return { size, position, setSize: setSizeConstrained, getResizeHandleProps };
