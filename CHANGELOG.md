@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-06-13
+
+### Added
+
+- `Window` snap overlap avoidance: when a snapped foreground window overlaps a lower-z snapped background window, the background window shrinks by the overlap amount instead of being hidden.
+- `calculateShrinkRect` collision helper to compute minimal shrink geometry for overlapping rectangles.
+- `useWindowManager` shrink/resize request state with `requestResize`, `clearResizeRequest`, `restoreShrink`, and `setWindowSnapped`.
+- `Window` integration that resolves overlap by z-order priority, restores pre-shrink geometry on unsnap or manual drag/resize, and falls back to existing move-away behavior when shrink is impossible.
+- Storybook `SnapOverlapShrink` scenario and Playwright visual QA script to verify zero overlap area after snap.
+
+### Changed
+
+- `WindowManagerContext` now exposes `resizeRequests`, `preShrinkGeometries`, `requestResize`, `clearResizeRequest`, `restoreShrink`, and `setWindowSnapped`.
+
+### Fixed
+
+- Background snapped windows no longer remain hidden behind overlapping foreground snapped windows when `autoMoveOnSnap` is enabled.
+
+
 ## [0.2.2] - 2026-06-12
 
 ### Added

@@ -1,9 +1,10 @@
+import { flushSync } from 'react-dom';
 import { useRef, useState, useMemo, type CSSProperties, type ReactNode, useEffect, useId } from 'react';
 import clsx from 'clsx';
 import { TitleBar } from './TitleBar';
 import { useDraggable } from '../../hooks/useDraggable';
 import { useResizable } from '../../hooks/useResizable';
-import { findCollisions } from '../../hooks/collision';
+import { calculateEscapePosition, calculateShrinkRect, isColliding, type Rect } from '../../hooks/collision';
 import { useWindowManagerContext } from './WindowManagerContext';
 import type { ResizeDirection } from '../../hooks/useResizable';
 import styles from './Window.module.css';
@@ -103,8 +104,14 @@ export function Window({
   const updateGeometry = context?.updateGeometry;
   const moveRequests = context?.moveRequests;
   const clearMoveRequest = context?.clearMoveRequest;
+  const resizeRequests = context?.resizeRequests;
+  const clearResizeRequest = context?.clearResizeRequest;
   const getAllGeometries = context?.getAllGeometries;
   const requestMove = context?.requestMove;
+  const requestResize = context?.requestResize;
+  const setWindowSnapped = context?.setWindowSnapped;
+  const restoreShrink = context?.restoreShrink;
+  const preShrinkGeometries = context?.preShrinkGeometries;
 
   // Managed mode: register/unregister with window manager
   useEffect(() => {
@@ -187,6 +194,21 @@ export function Window({
     return () => window.cancelAnimationFrame(frame);
   }, [isManaged, effectiveWindowId, moveRequests, clearMoveRequest, size.width, size.height]);
 
+  useEffect(() => {
+    if (!isManaged || !effectiveWindowId || !resizeRequests || !clearResizeRequest) return;
+
+    const resizeRequest = resizeRequests[effectiveWindowId];
+    if (!resizeRequest) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      setPosition({ x: resizeRequest.x, y: resizeRequest.y });
+      setSize({ width: resizeRequest.width, height: resizeRequest.height });
+      clearResizeRequest(effectiveWindowId);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isManaged, effectiveWindowId, resizeRequests, clearResizeRequest, setSize]);
+
   // useDraggable uses the LIVE size from useResizable for bounds, not the initial size
   const { dragHandleProps, snapTarget } = useDraggable({
     initialX: responsiveInitial.x,
@@ -205,21 +227,53 @@ export function Window({
             setPosition({ x: target.x, y: target.y });
             setSize({ width: target.width, height: target.height });
             setIsSnapped(true);
+            if (effectiveWindowId && setWindowSnapped) {
+              setWindowSnapped(effectiveWindowId, true);
+            }
 
             if (autoMoveOnSnap && isManaged && effectiveWindowId && getAllGeometries && requestMove) {
-              const allGeometries = { ...getAllGeometries() };
-              delete allGeometries[effectiveWindowId];
+              const foregroundRect: Rect = {
+                x: target.x,
+                y: target.y,
+                width: target.width,
+                height: target.height,
+              };
+              const foregroundZIndex = context?.windows[effectiveWindowId]?.zIndex ?? effectiveZIndex;
 
-              findCollisions(
-                {
-                  x: target.x,
-                  y: target.y,
-                  width: target.width,
-                  height: target.height,
-                },
-                allGeometries,
-              ).forEach(({ id, escapePosition }) => {
-                requestMove(id, escapePosition);
+              const backgroundEntries = Object.entries(getAllGeometries())
+                .map(([id, backgroundRect]) => ({
+                  id,
+                  backgroundRect,
+                  zIndex: context?.windows[id]?.zIndex ?? 0,
+                }))
+                .sort((a, b) => b.zIndex - a.zIndex);
+
+              backgroundEntries.forEach(({ id, backgroundRect }) => {
+                if (id === effectiveWindowId || !isColliding(foregroundRect, backgroundRect)) return;
+
+                const backgroundZIndex = context?.windows[id]?.zIndex ?? 0;
+                if (backgroundZIndex >= foregroundZIndex) return;
+
+                const resolvedBackgroundRect = preShrinkGeometries?.[id] ?? backgroundRect;
+                const shrinkRect = context?.windows[id]?.isSnapped
+                  ? calculateShrinkRect(foregroundRect, resolvedBackgroundRect, { minWidth: 200, minHeight: 100 })
+                  : null;
+
+                if (shrinkRect && requestResize) {
+                  const currentGeometry = getAllGeometries()[id];
+                  const isNoOp = currentGeometry
+                    && currentGeometry.x === shrinkRect.x
+                    && currentGeometry.y === shrinkRect.y
+                    && currentGeometry.width === shrinkRect.width
+                    && currentGeometry.height === shrinkRect.height;
+
+                  if (!isNoOp) {
+                    requestResize(id, shrinkRect);
+                  }
+                  return;
+                }
+
+                requestMove(id, calculateEscapePosition(foregroundRect, backgroundRect));
               });
             }
           }
@@ -231,12 +285,24 @@ export function Window({
       }
 
       if (!isSnapped || !preSnapPosition.current || !preSnapSize.current) {
+        if (effectiveWindowId && restoreShrink && preShrinkGeometries?.[effectiveWindowId]) {
+          restoreShrink(effectiveWindowId);
+        }
+
         return;
       }
 
       setPosition(preSnapPosition.current);
       setSize(preSnapSize.current);
       setIsSnapped(false);
+      if (effectiveWindowId && setWindowSnapped) {
+        setWindowSnapped(effectiveWindowId, false);
+      }
+      if (restoreShrink && preShrinkGeometries) {
+        Object.keys(preShrinkGeometries).forEach((id) => {
+          restoreShrink(id);
+        });
+      }
     },
   });
 
@@ -329,11 +395,21 @@ export function Window({
           {statusBar}
           {!isMaximized && (() => {
             const { style: seStyle, onPointerDown } = getResizeHandleProps('se');
+            const handlePointerDown = (event: React.PointerEvent) => {
+              if (effectiveWindowId && restoreShrink && preShrinkGeometries?.[effectiveWindowId]) {
+                flushSync(() => {
+                  restoreShrink(effectiveWindowId);
+                });
+              }
+
+              onPointerDown(event);
+            };
+
             return (
               <div
                 className={styles.sizeGrip}
                 style={seStyle}
-                onPointerDown={onPointerDown}
+                onPointerDown={handlePointerDown}
               />
             );
           })()}
@@ -342,12 +418,21 @@ export function Window({
       {!isMaximized && !isMinimized &&
         RESIZE_DIRECTIONS.map((dir) => {
           const { style: handleStyle, onPointerDown } = getResizeHandleProps(dir);
+          const handlePointerDown = (event: React.PointerEvent) => {
+            if (effectiveWindowId && restoreShrink && preShrinkGeometries?.[effectiveWindowId]) {
+              flushSync(() => {
+                restoreShrink(effectiveWindowId);
+              });
+            }
+
+            onPointerDown(event);
+          };
           return (
             <div
               key={dir}
               className={clsx(styles.resizeHandle, styles[dir])}
               style={handleStyle}
-              onPointerDown={onPointerDown}
+              onPointerDown={handlePointerDown}
             />
           );
         })}

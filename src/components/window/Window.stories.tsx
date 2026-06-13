@@ -204,3 +204,48 @@ export const CustomSnapThreshold: Story = {
     </Window>
   ),
 };
+
+export const SnapOverlapShrink: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Background A',
+    width: 1280,
+    height: 384,
+    initialX: 0,
+    initialY: 0,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Two managed windows with autoMoveOnSnap enabled. Drag Background A to the top edge to snap it to the top half, then drag Foreground B to the right edge. The foreground snap overlaps the snapped background, triggering horizontal shrink so the intersection area becomes zero.',
+      },
+    },
+  },
+  render: (args) => (
+    <>
+      <Window
+        {...args}
+        title="Background A"
+        windowId="win-a"
+        width={1280}
+        height={384}
+        initialX={0}
+        initialY={0}
+      >
+        <p>Snap me to the top edge first.</p>
+      </Window>
+      <Window
+        {...args}
+        title="Foreground B"
+        windowId="win-b"
+        width={400}
+        height={300}
+        initialX={300}
+        initialY={300}
+      >
+        <p>Then drag me to the right edge to shrink the background.</p>
+      </Window>
+    </>
+  ),
+};
