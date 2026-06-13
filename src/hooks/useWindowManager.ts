@@ -211,7 +211,9 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
         return prev;
       }
 
-      return { ...prev, [id]: rect };
+      const next = { ...prev, [id]: rect };
+      resizeRequestsRef.current = next;
+      return next;
     });
     setPreShrinkGeometries((prev) => {
       if (prev[id]) return prev;
@@ -219,14 +221,19 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
       const currentGeometry = geometriesRef.current[id];
       if (!currentGeometry) return prev;
 
-      return { ...prev, [id]: currentGeometry };
+      const next = { ...prev, [id]: currentGeometry };
+      preShrinkGeometriesRef.current = next;
+      return next;
     });
   }, []);
 
   const clearResizeRequest = useCallback((id: string) => {
     setResizeRequests((prev) => {
+      if (!prev[id]) return prev;
+
       const next = { ...prev };
       delete next[id];
+      resizeRequestsRef.current = next;
       return next;
     });
   }, []);
@@ -242,6 +249,7 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
 
       const next = { ...prev };
       delete next[id];
+      preShrinkGeometriesRef.current = next;
       return next;
     });
   }, [requestResize]);

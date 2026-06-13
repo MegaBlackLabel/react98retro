@@ -2,6 +2,8 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, type Mock, beforeEach, afterEach } from 'vitest';
 import { Window } from './Window';
 import { WindowManagerContext } from './WindowManagerContext';
@@ -681,7 +683,7 @@ describe('Window', () => {
     }
 
     it('does not keep snapped window ids in module-level mutable state', () => {
-      const source = readFileSync('src/components/window/Window.tsx', 'utf8');
+      const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'Window.tsx'), 'utf8');
 
       expect(source).not.toContain('snappedWindowIds');
       expect(source).not.toContain('new Set<string>()');
