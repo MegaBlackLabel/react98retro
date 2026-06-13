@@ -10,6 +10,11 @@ export type EscapePosition = {
   y: number;
 };
 
+export type ShrinkOptions = {
+  minWidth?: number;
+  minHeight?: number;
+};
+
 const GAP = 8;
 const DEFAULT_VIEWPORT_WIDTH = 1024;
 const DEFAULT_VIEWPORT_HEIGHT = 768;
@@ -47,6 +52,89 @@ export function isColliding(a: Rect, b: Rect): boolean {
   }
 
   return !(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y);
+}
+
+export function calculateShrinkRect(foregroundRect: Rect, backgroundRect: Rect, options: ShrinkOptions): Rect | null {
+  const minWidth = options.minWidth ?? 200;
+  const minHeight = options.minHeight ?? 100;
+
+  if (!isColliding(foregroundRect, backgroundRect)) {
+    return backgroundRect;
+  }
+
+  const horizontalWidth = foregroundRect.x - backgroundRect.x;
+  const verticalHeight = foregroundRect.y - backgroundRect.y;
+
+  const candidates: Rect[] = [];
+
+  const isValidCandidate = (candidate: Rect): boolean => (
+    candidate.width >= minWidth
+    && candidate.height >= minHeight
+    && !isColliding(foregroundRect, candidate)
+  );
+
+  const addCandidate = (candidate: Rect) => {
+    if (isValidCandidate(candidate)) {
+      candidates.push(candidate);
+    }
+  };
+
+  if (foregroundRect.x > backgroundRect.x && horizontalWidth >= minWidth) {
+    addCandidate({
+      x: backgroundRect.x,
+      y: backgroundRect.y,
+      width: horizontalWidth,
+      height: backgroundRect.height,
+    });
+  }
+
+  if (foregroundRect.y > backgroundRect.y && verticalHeight >= minHeight) {
+    addCandidate({
+      x: backgroundRect.x,
+      y: backgroundRect.y,
+      width: backgroundRect.width,
+      height: verticalHeight,
+    });
+  }
+
+  if (candidates.length === 0) {
+    const backgroundRight = backgroundRect.x + backgroundRect.width;
+    const backgroundBottom = backgroundRect.y + backgroundRect.height;
+    const foregroundRight = foregroundRect.x + foregroundRect.width;
+    const foregroundBottom = foregroundRect.y + foregroundRect.height;
+
+    addCandidate({
+      x: backgroundRect.x,
+      y: foregroundBottom,
+      width: backgroundRect.width,
+      height: backgroundBottom - foregroundBottom,
+    });
+
+    addCandidate({
+      x: foregroundRight,
+      y: backgroundRect.y,
+      width: backgroundRight - foregroundRight,
+      height: backgroundRect.height,
+    });
+
+    addCandidate({
+      x: foregroundRight,
+      y: foregroundBottom,
+      width: backgroundRight - foregroundRight,
+      height: backgroundBottom - foregroundBottom,
+    });
+  }
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return candidates.reduce((best, candidate) => {
+    const bestArea = best.width * best.height;
+    const candidateArea = candidate.width * candidate.height;
+
+    return candidateArea > bestArea ? candidate : best;
+  });
 }
 
 export function calculateEscapePosition(snapWindow: Rect, otherWindow: Rect): EscapePosition {

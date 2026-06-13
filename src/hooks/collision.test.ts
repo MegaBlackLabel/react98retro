@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { calculateEscapePosition, findCollisions, isColliding, type Rect } from './collision';
+import { calculateEscapePosition, calculateShrinkRect, findCollisions, isColliding, type Rect } from './collision';
 
 describe('isColliding', () => {
   it('returns false when rectangles do not overlap', () => {
@@ -92,6 +92,43 @@ describe('calculateEscapePosition', () => {
     expect(calculateEscapePosition(snapWindow, otherWindow)).toEqual({ x: 0, y: 0 });
 
     vi.unstubAllGlobals();
+  });
+});
+
+describe('calculateShrinkRect', () => {
+  it('shrinks the background window horizontally when the overlap is on the right edge', () => {
+    const foreground: Rect = { x: 450, y: 0, width: 500, height: 800 };
+    const background: Rect = { x: 0, y: 0, width: 500, height: 800 };
+
+    expect(calculateShrinkRect(foreground, background, {})).toEqual({ x: 0, y: 0, width: 450, height: 800 });
+  });
+
+  it('shrinks the background window vertically when the overlap is on the bottom edge', () => {
+    const foreground: Rect = { x: 0, y: 350, width: 1000, height: 450 };
+    const background: Rect = { x: 0, y: 0, width: 1000, height: 400 };
+
+    expect(calculateShrinkRect(foreground, background, {})).toEqual({ x: 0, y: 0, width: 1000, height: 350 });
+  });
+
+  it('shrinks a left-snapped background below a top-snapped foreground when both start at the origin', () => {
+    const foreground: Rect = { x: 0, y: 0, width: 1024, height: 384 };
+    const background: Rect = { x: 0, y: 0, width: 512, height: 768 };
+
+    expect(calculateShrinkRect(foreground, background, {})).toEqual({ x: 0, y: 384, width: 512, height: 384 });
+  });
+
+  it('shrinks a right-snapped background below a top-snapped foreground when both share the top edge', () => {
+    const foreground: Rect = { x: 0, y: 0, width: 1024, height: 384 };
+    const background: Rect = { x: 512, y: 0, width: 512, height: 768 };
+
+    expect(calculateShrinkRect(foreground, background, {})).toEqual({ x: 512, y: 384, width: 512, height: 384 });
+  });
+
+  it('returns null when shrinking would go below the minimum width', () => {
+    const foreground: Rect = { x: 150, y: 0, width: 100, height: 100 };
+    const background: Rect = { x: 0, y: 0, width: 200, height: 100 };
+
+    expect(calculateShrinkRect(foreground, background, {})).toBeNull();
   });
 });
 

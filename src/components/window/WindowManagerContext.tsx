@@ -1,7 +1,9 @@
 import { createContext, useContext } from 'react';
 import type { UseWindowManagerResult } from '../../hooks/useWindowManager';
 
-export const WindowManagerContext = createContext<UseWindowManagerResult | null>(null);
+export type WindowManagerContextValue = UseWindowManagerResult;
+
+export const WindowManagerContext = createContext<WindowManagerContextValue | null>(null);
 WindowManagerContext.displayName = 'WindowManagerContext';
 
 export function useWindowManagerContext() {

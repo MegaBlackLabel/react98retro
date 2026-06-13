@@ -64,3 +64,6 @@
     height: 20px;
   }
 }
+.window {
+  box-sizing: border-box;
+}

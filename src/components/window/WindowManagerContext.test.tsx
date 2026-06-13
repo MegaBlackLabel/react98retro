@@ -19,11 +19,36 @@ function ContextConsumer() {
           <span data-testid="windows-count">{Object.keys(manager.windows).length}</span>
           <span data-testid="active-window">{manager.activeWindowId ?? 'none'}</span>
           <span data-testid="auto-move-on-snap">{String(manager.autoMoveOnSnap)}</span>
+          <span data-testid="resize-request">
+            {manager.resizeRequests.win1
+              ? `${manager.resizeRequests.win1.width}x${manager.resizeRequests.win1.height}`
+              : 'none'}
+          </span>
+          <span data-testid="pre-shrink">
+            {manager.preShrinkGeometries.win1
+              ? `${manager.preShrinkGeometries.win1.width}x${manager.preShrinkGeometries.win1.height}`
+              : 'none'}
+          </span>
           <button data-testid="register-btn" onClick={() => manager.register('win1')}>
             Register
           </button>
           <button data-testid="focus-btn" onClick={() => manager.focus('win1')}>
             Focus
+          </button>
+          <button
+            data-testid="resize-btn"
+            onClick={() => {
+              manager.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+              manager.requestResize('win1', { x: 10, y: 20, width: 200, height: 120 });
+            }}
+          >
+            Resize
+          </button>
+          <button data-testid="clear-resize-btn" onClick={() => manager.clearResizeRequest('win1')}>
+            Clear resize
+          </button>
+          <button data-testid="restore-shrink-btn" onClick={() => manager.restoreShrink('win1')}>
+            Restore shrink
           </button>
         </>
       )}
@@ -88,6 +113,31 @@ describe('WindowManagerContext', () => {
     // Focus the window
     await user.click(screen.getByTestId('focus-btn'));
     expect(screen.getByTestId('active-window')).toHaveTextContent('win1');
+  });
+
+  it('exposes resize request APIs through Win98Provider context', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Win98Provider>
+        <ContextConsumer />
+      </Win98Provider>,
+    );
+
+    await user.click(screen.getByTestId('resize-btn'));
+
+    expect(screen.getByTestId('resize-request')).toHaveTextContent('200x120');
+    expect(screen.getByTestId('pre-shrink')).toHaveTextContent('320x240');
+
+    await user.click(screen.getByTestId('clear-resize-btn'));
+
+    expect(screen.getByTestId('resize-request')).toHaveTextContent('none');
+    expect(screen.getByTestId('pre-shrink')).toHaveTextContent('320x240');
+
+    await user.click(screen.getByTestId('restore-shrink-btn'));
+
+    expect(screen.getByTestId('resize-request')).toHaveTextContent('320x240');
+    expect(screen.getByTestId('pre-shrink')).toHaveTextContent('none');
   });
 
   it('exports WindowManagerContext directly for advanced use cases', () => {

@@ -1,6 +1,8 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { readFileSync } from 'node:fs';
+import { describe, it, expect, vi, type Mock, beforeEach, afterEach } from 'vitest';
 import { Window } from './Window';
 import { WindowManagerContext } from './WindowManagerContext';
 import type { UseWindowManagerResult } from '../../hooks/useWindowManager';
@@ -464,16 +466,200 @@ describe('Window', () => {
 });
 
   describe('WindowManagerContext integration', () => {
+    type ManagerSpies = {
+      requestMove: (id: string, position: UseWindowManagerResult['moveRequests'][string]) => void;
+      requestResize: Mock<(id: string, rect: UseWindowManagerResult['resizeRequests'][string]) => void>;
+      clearMoveRequest: (id: string) => void;
+      clearResizeRequest: (id: string) => void;
+      restoreShrink: (id: string) => void;
+      setWindowSnapped: (id: string, isSnapped: boolean) => void;
+    };
+
+    function snapWindow(title: string, pointerX: number, pointerY: number) {
+      const titleBar = screen.getByText(title).closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: pointerX, clientY: pointerY, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: pointerX, clientY: pointerY, pointerId: 1 }));
+      });
+    }
+
+    function StatefulWindowManager({
+      children,
+      windows,
+      autoMoveOnSnap = false,
+      initialGeometries = {},
+      initialMoveRequests = {},
+      initialResizeRequests = {},
+      initialPreShrinkGeometries = {},
+      spies,
+    }: {
+      children: ReactNode;
+      windows: UseWindowManagerResult['windows'];
+      autoMoveOnSnap?: boolean;
+      initialGeometries?: UseWindowManagerResult['geometries'];
+      initialMoveRequests?: UseWindowManagerResult['moveRequests'];
+      initialResizeRequests?: UseWindowManagerResult['resizeRequests'];
+      initialPreShrinkGeometries?: UseWindowManagerResult['preShrinkGeometries'];
+      spies: ManagerSpies;
+    }) {
+      const [geometries, setGeometries] = useState<UseWindowManagerResult['geometries']>(initialGeometries);
+      const [moveRequests, setMoveRequests] = useState<UseWindowManagerResult['moveRequests']>(initialMoveRequests);
+      const [resizeRequests, setResizeRequests] = useState<UseWindowManagerResult['resizeRequests']>(initialResizeRequests);
+      const [preShrinkGeometries, setPreShrinkGeometries] = useState<UseWindowManagerResult['preShrinkGeometries']>(initialPreShrinkGeometries);
+      const [windowStates, setWindowStates] = useState<UseWindowManagerResult['windows']>(windows);
+      const geometriesRef = useRef(geometries);
+      const staticMethods = useRef({
+        focus: vi.fn(),
+        minimize: vi.fn(),
+        maximize: vi.fn(),
+        restore: vi.fn(),
+        close: vi.fn(),
+        register: vi.fn(),
+        unregister: vi.fn(),
+        isActive: vi.fn((id: string) => id === 'win-b'),
+      });
+
+      const updateGeometry = useCallback((id: string, geometry: UseWindowManagerResult['geometries'][string]) => {
+        geometriesRef.current = { ...geometriesRef.current, [id]: geometry };
+        setGeometries(geometriesRef.current);
+      }, []);
+
+      const getAllGeometries = useCallback(() => geometriesRef.current, []);
+
+      const requestMove = useCallback((id: string, position: UseWindowManagerResult['moveRequests'][string]) => {
+        spies.requestMove(id, position);
+        setMoveRequests((current) => ({ ...current, [id]: position }));
+      }, [spies]);
+
+      const clearMoveRequest = useCallback((id: string) => {
+        spies.clearMoveRequest(id);
+        setMoveRequests((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+      }, [spies]);
+
+      const requestResize = useCallback((id: string, rect: UseWindowManagerResult['resizeRequests'][string]) => {
+        spies.requestResize(id, rect);
+        setPreShrinkGeometries((current) => current[id] ? current : { ...current, [id]: geometriesRef.current[id] });
+        setResizeRequests((current) => ({ ...current, [id]: rect }));
+      }, [spies]);
+
+      const clearResizeRequest = useCallback((id: string) => {
+        spies.clearResizeRequest(id);
+        setResizeRequests((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+      }, [spies]);
+
+      const restoreShrink = useCallback((id: string) => {
+        spies.restoreShrink(id);
+        setPreShrinkGeometries((current) => {
+          const preShrinkGeometry = current[id];
+          if (preShrinkGeometry) {
+            geometriesRef.current = { ...geometriesRef.current, [id]: preShrinkGeometry };
+            setGeometries(geometriesRef.current);
+            setResizeRequests((resizeCurrent) => ({ ...resizeCurrent, [id]: preShrinkGeometry }));
+          }
+
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+        setResizeRequests((current) => {
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+      }, [spies]);
+
+      const setWindowSnapped = useCallback((id: string, isSnapped: boolean) => {
+        spies.setWindowSnapped(id, isSnapped);
+        setWindowStates((current) => {
+          if (!current[id]) return current;
+          return { ...current, [id]: { ...current[id], isSnapped } };
+        });
+      }, [spies]);
+
+      const context = useMemo<UseWindowManagerResult>(
+        () => ({
+          windows: windowStates,
+          activeWindowId: 'win-b',
+          geometries,
+          moveRequests,
+          resizeRequests,
+          preShrinkGeometries,
+          autoMoveOnSnap,
+          ...staticMethods.current,
+          updateGeometry,
+          getAllGeometries,
+          requestMove,
+          clearMoveRequest,
+          requestResize,
+          clearResizeRequest,
+          restoreShrink,
+          setWindowSnapped,
+        }),
+        [
+          autoMoveOnSnap,
+          clearMoveRequest,
+          clearResizeRequest,
+          geometries,
+          getAllGeometries,
+          moveRequests,
+          preShrinkGeometries,
+          requestMove,
+          requestResize,
+          resizeRequests,
+          restoreShrink,
+          setWindowSnapped,
+          updateGeometry,
+          windowStates,
+        ],
+      );
+
+      return <WindowManagerContext.Provider value={context}>{children}</WindowManagerContext.Provider>;
+    }
+
+    function createManagerSpies(): ManagerSpies {
+      return {
+        requestMove: vi.fn<(id: string, position: UseWindowManagerResult['moveRequests'][string]) => void>(),
+        requestResize: vi.fn<(id: string, rect: UseWindowManagerResult['resizeRequests'][string]) => void>(),
+        clearMoveRequest: vi.fn<(id: string) => void>(),
+        clearResizeRequest: vi.fn<(id: string) => void>(),
+        restoreShrink: vi.fn<(id: string) => void>(),
+        setWindowSnapped: vi.fn<(id: string, isSnapped: boolean) => void>(),
+      };
+    }
+
+    const managedWindows = {
+      'win-a': { id: 'win-a', minimized: false, maximized: false, isSnapped: false, zIndex: 1 },
+      'win-b': { id: 'win-b', minimized: false, maximized: false, isSnapped: false, zIndex: 2 },
+    };
+
     function createMockContext(overrides?: Partial<UseWindowManagerResult>): UseWindowManagerResult {
       const mockWindows = overrides?.windows ?? {};
       const mockActiveWindowId = overrides?.activeWindowId ?? null;
       const mockGeometries = overrides?.geometries ?? {};
       const mockMoveRequests = overrides?.moveRequests ?? {};
+      const mockResizeRequests = overrides?.resizeRequests ?? {};
+      const mockPreShrinkGeometries = overrides?.preShrinkGeometries ?? {};
       return {
         windows: mockWindows,
         activeWindowId: mockActiveWindowId,
         geometries: mockGeometries,
         moveRequests: mockMoveRequests,
+        resizeRequests: mockResizeRequests,
+        preShrinkGeometries: mockPreShrinkGeometries,
         autoMoveOnSnap: overrides?.autoMoveOnSnap ?? false,
         focus: vi.fn(),
         minimize: vi.fn(),
@@ -487,8 +673,19 @@ describe('Window', () => {
         getAllGeometries: vi.fn(() => mockGeometries),
         requestMove: vi.fn(),
         clearMoveRequest: vi.fn(),
+        requestResize: vi.fn(),
+        clearResizeRequest: vi.fn(),
+        restoreShrink: vi.fn(),
+        setWindowSnapped: vi.fn(),
       };
     }
+
+    it('does not keep snapped window ids in module-level mutable state', () => {
+      const source = readFileSync('src/components/window/Window.tsx', 'utf8');
+
+      expect(source).not.toContain('snappedWindowIds');
+      expect(source).not.toContain('new Set<string>()');
+    });
 
     it('managed window registers on mount', () => {
       const context = createMockContext();
@@ -569,7 +766,7 @@ describe('Window', () => {
 
     it('managed window gets zIndex from context', () => {
       const context = createMockContext({
-        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, zIndex: 99 } },
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, isSnapped: false, zIndex: 99 } },
         activeWindowId: 'win-1',
       });
       const { container } = render(
@@ -583,7 +780,7 @@ describe('Window', () => {
 
     it('managed window does not use local activeZIndex on drag', () => {
       const context = createMockContext({
-        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, zIndex: 5 } },
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, isSnapped: false, zIndex: 5 } },
         activeWindowId: 'win-1',
       });
       const { container } = render(
@@ -746,6 +943,201 @@ describe('Window', () => {
       });
     });
 
+    it('shrinks a lower-z snapped window horizontally when a foreground snap overlaps it', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const spies = createManagerSpies();
+
+      const { container } = render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={400} height={300} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+      const windows = container.querySelectorAll('.window');
+      const background = windows[0] as HTMLElement;
+      const foreground = windows[1] as HTMLElement;
+
+      snapWindow('Background A', 10, 384);
+
+      await waitFor(() => {
+        expect(background.style.left).toBe('0px');
+        expect(background.style.width).toBe('500px');
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 384);
+
+      await waitFor(() => {
+        expect(spies.requestResize).toHaveBeenCalledWith('win-a', { x: 0, y: 0, width: 450, height: 768 });
+        expect(background.style.width).toBe('450px');
+        expect(foreground.style.left).toBe('450px');
+        expect(foreground.style.width).toBe('450px');
+        expect(spies.requestMove).not.toHaveBeenCalled();
+      });
+    });
+
+    it('marks windows snapped through the manager and restores shrunk backgrounds when foreground unsnaps', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const spies = createManagerSpies();
+
+      const { container } = render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={400} height={300} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+      const windows = container.querySelectorAll('.window');
+      const background = windows[0] as HTMLElement;
+      const foregroundTitleBar = screen.getByText('Foreground B').closest('.title-bar') as HTMLElement;
+      foregroundTitleBar.setPointerCapture = vi.fn();
+      foregroundTitleBar.releasePointerCapture = vi.fn();
+
+      snapWindow('Background A', 10, 384);
+
+      await waitFor(() => {
+        expect(spies.setWindowSnapped).toHaveBeenCalledWith('win-a', true);
+        expect(background.style.width).toBe('500px');
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 384);
+
+      await waitFor(() => {
+        expect(spies.setWindowSnapped).toHaveBeenCalledWith('win-b', true);
+        expect(background.style.width).toBe('450px');
+      });
+
+      act(() => {
+        foregroundTitleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 460, clientY: 100, pointerId: 2, bubbles: true }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(spies.setWindowSnapped).toHaveBeenCalledWith('win-b', false);
+        expect(spies.restoreShrink).toHaveBeenCalledWith('win-a');
+        expect(background.style.width).toBe('500px');
+      });
+    });
+
+    it('shrinks a lower-z snapped window vertically when a foreground snap overlaps it', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 800, writable: true });
+      const spies = createManagerSpies();
+
+      const { container } = render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={400} height={300} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+      const windows = container.querySelectorAll('.window');
+      const background = windows[0] as HTMLElement;
+      const foreground = windows[1] as HTMLElement;
+
+      snapWindow('Background A', 500, 10);
+
+      await waitFor(() => {
+        expect(background.style.top).toBe('0px');
+        expect(background.style.height).toBe('400px');
+      });
+
+      Object.defineProperty(window, 'innerHeight', { value: 700, writable: true });
+      snapWindow('Foreground B', 500, 690);
+
+      await waitFor(() => {
+        expect(spies.requestResize).toHaveBeenCalledWith('win-a', { x: 0, y: 0, width: 1000, height: 350 });
+        expect(background.style.height).toBe('350px');
+        expect(foreground.style.top).toBe('350px');
+        expect(foreground.style.height).toBe('350px');
+        expect(spies.requestMove).not.toHaveBeenCalled();
+      });
+    });
+
+    it('shrinks a left-snapped background below a top-snapped foreground instead of moving it', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={400} height={300} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+      const background = screen.getByText('Background A').closest('.window') as HTMLElement;
+
+      snapWindow('Background A', 10, 384);
+
+      await waitFor(() => {
+        expect(background).toHaveStyle({ left: '0px', top: '0px', width: '512px', height: '768px' });
+      });
+
+      snapWindow('Foreground B', 512, 10);
+
+      await waitFor(() => {
+        expect(spies.requestResize).toHaveBeenCalledWith('win-a', { x: 0, y: 384, width: 512, height: 384 });
+        expect(background).toHaveStyle({ left: '0px', top: '384px', width: '512px', height: '384px' });
+        expect(screen.getByText('Foreground B').closest('.window')).toHaveStyle({ left: '0px', top: '0px', width: '1024px', height: '384px' });
+        expect(spies.requestMove).not.toHaveBeenCalled();
+      });
+    });
+
+    it('falls back to moving a lower-z background window when it is not snapped', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={100} height={100} initialX={500} initialY={0} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ left: '500px' });
+      });
+
+      snapWindow('Foreground B', 1014, 384);
+
+      await waitFor(() => {
+        expect(spies.requestResize).not.toHaveBeenCalled();
+        expect(spies.requestMove).toHaveBeenCalledWith('win-a', { x: 404, y: 8 });
+      });
+    });
+
+    it('does not shrink or move overlapping windows when autoMoveOnSnap is false', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      const spies = createManagerSpies();
+
+      const { container } = render(
+        <StatefulWindowManager windows={managedWindows} spies={spies}>
+          <Window title="Background A" windowId="win-a" width={400} height={300} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} autoMoveOnSnap={false} />
+        </StatefulWindowManager>,
+      );
+      const background = container.querySelector('.window') as HTMLElement;
+
+      snapWindow('Background A', 10, 384);
+
+      await waitFor(() => {
+        expect(background.style.width).toBe('500px');
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 384);
+
+      await waitFor(() => {
+        expect(spies.requestResize).not.toHaveBeenCalled();
+        expect(spies.requestMove).not.toHaveBeenCalled();
+        expect(background.style.width).toBe('500px');
+      });
+    });
+
     it('does not request collision moves on snap commit by default', async () => {
       Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
       Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
@@ -775,6 +1167,165 @@ describe('Window', () => {
 
       await waitFor(() => {
         expect(context.requestMove).not.toHaveBeenCalled();
+      });
+    });
+
+    it('restores a shrunken background window when the snapped foreground window starts dragging away', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 700, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={600} height={500} initialX={8} initialY={8} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+
+      snapWindow('Background A', 10, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ left: '0px', width: '500px' });
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ width: '450px' });
+      });
+
+      const foregroundTitleBar = screen.getByText('Foreground B').closest('.title-bar') as HTMLElement;
+      foregroundTitleBar.setPointerCapture = vi.fn();
+      foregroundTitleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        foregroundTitleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 700, clientY: 100, pointerId: 2, bubbles: true }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(spies.restoreShrink).toHaveBeenCalledWith('win-a');
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ width: '500px' });
+      });
+    });
+
+    it('restores a shrunken background window when its resize handle is pressed', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 700, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={600} height={500} initialX={8} initialY={8} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+
+      snapWindow('Background A', 10, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ left: '0px', width: '500px' });
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ width: '450px' });
+      });
+
+      const backgroundWindow = screen.getByText('Background A').closest('.window') as HTMLElement;
+      const resizeGrip = backgroundWindow.querySelector(`.${styles.sizeGrip}`) as HTMLElement;
+      resizeGrip.setPointerCapture = vi.fn();
+      resizeGrip.releasePointerCapture = vi.fn();
+
+      act(() => {
+        resizeGrip.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 500, clientY: 499, pointerId: 3, bubbles: true }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(spies.restoreShrink).toHaveBeenCalledWith('win-a');
+        expect(backgroundWindow).toHaveStyle({ width: '500px' });
+      });
+    });
+
+    it('does not shrink a lower-z window twice for repeated snap commits with the same overlap', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 700, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager windows={managedWindows} autoMoveOnSnap spies={spies}>
+          <Window title="Background A" windowId="win-a" width={600} height={500} initialX={8} initialY={8} />
+          <Window title="Foreground B" windowId="win-b" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+
+      snapWindow('Background A', 10, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ left: '0px', width: '500px' });
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Foreground B', 890, 350);
+
+      await waitFor(() => {
+        expect(spies.requestResize.mock.calls[0]?.[1]).toEqual({ x: 0, y: 0, width: 450, height: 700 });
+      });
+
+      snapWindow('Foreground B', 890, 350);
+
+      await waitFor(() => {
+        expect(spies.requestResize).toHaveBeenCalledTimes(2);
+        expect(spies.requestResize.mock.calls[1]?.[1]).toEqual({ x: 0, y: 0, width: 450, height: 700 });
+      });
+    });
+
+    it('processes three snapped windows top-to-bottom without shrinking the lowest window twice', async () => {
+      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 700, writable: true });
+      const spies = createManagerSpies();
+
+      render(
+        <StatefulWindowManager
+          windows={{
+            'win-a': { id: 'win-a', minimized: false, maximized: false, isSnapped: false, zIndex: 1 },
+            'win-b': { id: 'win-b', minimized: false, maximized: false, isSnapped: false, zIndex: 2 },
+            'win-c': { id: 'win-c', minimized: false, maximized: false, isSnapped: false, zIndex: 3 },
+          }}
+          autoMoveOnSnap
+          spies={spies}
+        >
+          <Window title="Background A" windowId="win-a" width={600} height={500} initialX={8} initialY={8} />
+          <Window title="Middle B" windowId="win-b" width={400} height={300} />
+          <Window title="Foreground C" windowId="win-c" width={400} height={300} />
+        </StatefulWindowManager>,
+      );
+
+      snapWindow('Background A', 10, 350);
+
+      await waitFor(() => {
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ left: '0px', width: '500px' });
+      });
+
+      Object.defineProperty(window, 'innerWidth', { value: 900, writable: true });
+      snapWindow('Middle B', 890, 350);
+
+      await waitFor(() => {
+        expect(spies.requestResize.mock.calls[0]?.[1]).toEqual({ x: 0, y: 0, width: 450, height: 700 });
+      });
+
+      snapWindow('Foreground C', 890, 350);
+
+      await waitFor(() => {
+        expect(spies.requestResize).toHaveBeenCalledTimes(2);
+        expect(spies.requestResize.mock.calls[1]?.[1]).toEqual({ x: 0, y: 0, width: 450, height: 700 });
+        expect(screen.getByText('Background A').closest('.window')).toHaveStyle({ width: '450px' });
       });
     });
   });

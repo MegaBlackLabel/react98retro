@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import type { Rect } from './collision';
 import { useWindowManager } from './useWindowManager';
 
 describe('useWindowManager', () => {
@@ -13,6 +14,27 @@ describe('useWindowManager', () => {
     const { result } = renderHook(() => useWindowManager(['win1']));
     expect(result.current.windows['win1'].minimized).toBe(false);
     expect(result.current.windows['win1'].maximized).toBe(false);
+    expect(result.current.windows['win1'].isSnapped).toBe(false);
+  });
+
+  it('setWindowSnapped updates snapped state for an existing window', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      (result.current as typeof result.current & {
+        setWindowSnapped: (id: string, isSnapped: boolean) => void;
+      }).setWindowSnapped('win1', true);
+    });
+
+    expect(result.current.windows['win1'].isSnapped).toBe(true);
+
+    act(() => {
+      (result.current as typeof result.current & {
+        setWindowSnapped: (id: string, isSnapped: boolean) => void;
+      }).setWindowSnapped('win1', false);
+    });
+
+    expect(result.current.windows['win1'].isSnapped).toBe(false);
   });
 
   it('focus brings window to highest z-index', () => {
@@ -69,6 +91,7 @@ describe('useWindowManager', () => {
     expect(result.current.windows['win1']).toBeDefined();
     expect(result.current.windows['win1'].minimized).toBe(false);
     expect(result.current.windows['win1'].maximized).toBe(false);
+    expect(result.current.windows['win1'].isSnapped).toBe(false);
     expect(result.current.windows['win1'].zIndex).toBe(1);
   });
 
@@ -201,5 +224,123 @@ describe('useWindowManager', () => {
     expect(result.current.moveRequests).toEqual({
       win2: { x: 240, y: 160 },
     });
+  });
+
+  it('requestResize stores resize request correctly', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+    const resizeRect: Rect = { x: 10, y: 20, width: 200, height: 120 };
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+      result.current.requestResize('win1', resizeRect);
+    });
+
+    expect(result.current.resizeRequests['win1']).toEqual(resizeRect);
+  });
+
+  it('requestResize does not rerender for duplicate resize rects', async () => {
+    const renderCount = vi.fn();
+    const { result } = renderHook(() => {
+      renderCount();
+      return useWindowManager(['win1']);
+    });
+    const resizeRect: Rect = { x: 10, y: 20, width: 200, height: 120 };
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const rendersAfterFirstUpdate = renderCount.mock.calls.length;
+
+    act(() => {
+      result.current.requestResize('win1', resizeRect);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const rendersAfterFirstResize = renderCount.mock.calls.length;
+
+    act(() => {
+      result.current.requestResize('win1', resizeRect);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(rendersAfterFirstUpdate).toBeGreaterThanOrEqual(2);
+    expect(rendersAfterFirstResize).toBeGreaterThan(rendersAfterFirstUpdate);
+    expect(renderCount.mock.calls.length).toBe(rendersAfterFirstResize);
+  });
+
+  it('clearResizeRequest removes only the pending resize request', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+      result.current.updateGeometry('win2', { x: 400, y: 60, width: 260, height: 180 });
+      result.current.requestResize('win1', { x: 10, y: 20, width: 200, height: 120 });
+      result.current.requestResize('win2', { x: 400, y: 60, width: 220, height: 140 });
+    });
+
+    act(() => {
+      result.current.clearResizeRequest('win1');
+    });
+
+    expect(result.current.resizeRequests).toEqual({
+      win2: { x: 400, y: 60, width: 220, height: 140 },
+    });
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 320, height: 240 });
+  });
+
+  it('repeated shrink resize requests reuse the original pre-shrink geometry', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+      result.current.requestResize('win1', { x: 10, y: 20, width: 220, height: 240 });
+    });
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 220, height: 240 });
+      result.current.requestResize('win1', { x: 10, y: 20, width: 200, height: 240 });
+    });
+
+    act(() => {
+      result.current.restoreShrink('win1');
+    });
+
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 220, height: 240 });
+    expect(result.current.resizeRequests['win1']).toEqual({ x: 10, y: 20, width: 320, height: 240 });
+    expect(result.current.preShrinkGeometries['win1']).toBeUndefined();
+  });
+
+  it('restoreShrink emits a resize request for the pre-shrink geometry and clears stored shrink state', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 320, height: 240 });
+      result.current.requestResize('win1', { x: 10, y: 20, width: 220, height: 240 });
+    });
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 220, height: 240 });
+      result.current.restoreShrink('win1');
+    });
+
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 220, height: 240 });
+    expect(result.current.resizeRequests['win1']).toEqual({ x: 10, y: 20, width: 320, height: 240 });
+    expect(result.current.preShrinkGeometries['win1']).toBeUndefined();
+  });
+
+  it('restoreShrink is a no-op when no pre-shrink geometry exists', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.updateGeometry('win1', { x: 10, y: 20, width: 220, height: 240 });
+      result.current.restoreShrink('win1');
+    });
+
+    expect(result.current.geometries['win1']).toEqual({ x: 10, y: 20, width: 220, height: 240 });
+    expect(result.current.resizeRequests['win1']).toBeUndefined();
+    expect(result.current.preShrinkGeometries['win1']).toBeUndefined();
   });
 });
