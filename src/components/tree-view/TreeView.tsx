@@ -49,7 +49,6 @@ const renderTreeItem = (
     <li
       key={item.id}
       tabIndex={0}
-      role="treeitem"
       onClick={() => {
         onSelect?.(item.id);
       }}
@@ -79,7 +78,7 @@ const renderTreeItem = (
 
 export const TreeView = forwardRef<HTMLUListElement, TreeViewProps>(
   ({ items, selectedId, onSelect, className, ...props }, ref) => (
-    <ul ref={ref} role="tree" className={clsx('tree-view', styles.treeView, className)} {...props}>
+    <ul ref={ref} className={clsx('tree-view', styles.treeView, className)} {...props}>
       {items.map((item) => renderTreeItem(item, selectedId, onSelect))}
     </ul>
   ),
