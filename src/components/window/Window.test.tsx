@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, type Mock, beforeEach, afterEach } from 'vitest';
 import { Window } from './Window';
-import { WindowManagerContext } from './WindowManagerContext';
+import { WindowManagerContext, type WindowManagerContextValue } from './WindowManagerContext';
 import type { UseWindowManagerResult } from '../../hooks/useWindowManager';
 import styles from './Window.module.css';
 
@@ -592,7 +592,7 @@ describe('Window', () => {
         });
       }, [spies]);
 
-      const context = useMemo<UseWindowManagerResult>(
+      const context = useMemo<WindowManagerContextValue>(
         () => ({
           windows: windowStates,
           activeWindowId: 'win-b',
@@ -601,6 +601,7 @@ describe('Window', () => {
           resizeRequests,
           preShrinkGeometries,
           autoMoveOnSnap,
+          isMobile: false,
           ...staticMethods.current,
           updateGeometry,
           getAllGeometries,
@@ -648,7 +649,7 @@ describe('Window', () => {
       'win-b': { id: 'win-b', minimized: false, maximized: false, isSnapped: false, zIndex: 2 },
     };
 
-    function createMockContext(overrides?: Partial<UseWindowManagerResult>): UseWindowManagerResult {
+    function createMockContext(overrides?: Partial<UseWindowManagerResult>): WindowManagerContextValue {
       const mockWindows = overrides?.windows ?? {};
       const mockActiveWindowId = overrides?.activeWindowId ?? null;
       const mockGeometries = overrides?.geometries ?? {};
@@ -663,6 +664,7 @@ describe('Window', () => {
         resizeRequests: mockResizeRequests,
         preShrinkGeometries: mockPreShrinkGeometries,
         autoMoveOnSnap: overrides?.autoMoveOnSnap ?? false,
+        isMobile: false,
         focus: vi.fn(),
         minimize: vi.fn(),
         maximize: vi.fn(),

@@ -1,7 +1,7 @@
 import type { ReactNode, CSSProperties } from 'react';
 import '98.css';
 import { useWindowManager } from '../../hooks/useWindowManager';
-import { WindowManagerContext } from '../window/WindowManagerContext';
+import { WindowManagerContext, type WindowManagerContextValue } from '../window/WindowManagerContext';
 
 export interface Win98ProviderProps {
   children: ReactNode;
@@ -16,10 +16,11 @@ export interface Win98ProviderProps {
  * Win98Provider — 98.css のスタイルを .win98 クラス配下にスコープするラッパー。
  * このコンポーネントで囲んだ要素にのみ Win98 スタイルが適用されます。
  */
-export function Win98Provider({ children, style, className, autoMoveOnSnap = false, mobile: _mobile = false }: Win98ProviderProps) {
+export function Win98Provider({ children, style, className, autoMoveOnSnap = false, mobile = false }: Win98ProviderProps) {
   const manager = useWindowManager([], autoMoveOnSnap);
+  const contextValue: WindowManagerContextValue = { ...manager, isMobile: mobile };
   return (
-    <WindowManagerContext.Provider value={manager}>
+    <WindowManagerContext.Provider value={contextValue}>
       <div className={['win98', className].filter(Boolean).join(' ')} style={style}>
         {children}
       </div>

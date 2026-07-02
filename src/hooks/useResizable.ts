@@ -238,6 +238,18 @@ export function useResizable(options?: {
     up: onPointerUp,
   };
 
+  // Cleanup on unmount: cancel pending rAF and remove window listeners
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
+    };
+  }, []);
+
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({
       style: { cursor: cursorMap[direction] } as CSSProperties,

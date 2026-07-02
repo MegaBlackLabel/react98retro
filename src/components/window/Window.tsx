@@ -3,7 +3,6 @@ import { useRef, useState, useMemo, type CSSProperties, type ReactNode, useEffec
 import clsx from 'clsx';
 import { TitleBar } from './TitleBar';
 import { useDraggable } from '../../hooks/useDraggable';
-import { useMobile } from '../../hooks/useMobile';
 import { useResizable } from '../../hooks/useResizable';
 import { calculateEscapePosition, calculateShrinkRect, isColliding, type Rect } from '../../hooks/collision';
 import { useWindowManagerContext } from './WindowManagerContext';
@@ -88,9 +87,9 @@ export function Window({
   zIndex,
   windowId,
 }: WindowProps) {
-  const { isMobile } = useMobile();
   const context = useWindowManagerContext();
   const isManaged = context !== null;
+  const isMobile = context?.isMobile ?? false;
   const autoMoveOnSnap = autoMoveOnSnapProp ?? context?.autoMoveOnSnap ?? false;
   const generatedId = useId();
   const effectiveWindowId = isManaged ? (windowId ?? generatedId) : undefined;

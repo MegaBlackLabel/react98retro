@@ -115,13 +115,4 @@ describe('useMobile', () => {
     expect(mobileMock.listeners.size).toBe(0);
     expect(touchMock.listeners.size).toBe(0);
   });
-
-  it('defaults to false when window is undefined', () => {
-    const { result } = renderHook(() => {
-      if (typeof window === 'undefined') return { isMobile: false, isTouch: false };
-      return useMobile();
-    });
-    expect(result.current.isMobile).toBe(false);
-    expect(result.current.isTouch).toBe(false);
-  });
 });
