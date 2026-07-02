@@ -48,8 +48,16 @@ const renderTreeItem = (
   return (
     <li
       key={item.id}
+      tabIndex={0}
+      role="treeitem"
       onClick={() => {
         onSelect?.(item.id);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.(item.id);
+        }
       }}
     >
       <span style={rowStyle}>

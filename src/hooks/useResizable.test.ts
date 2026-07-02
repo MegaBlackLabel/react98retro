@@ -4,6 +4,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useResizable } from './useResizable';
 import type { ResizeDirection } from './useResizable';
 
+function createPointerEvent(type: string, init: PointerEventInit) {
+  return new PointerEvent(type, init);
+}
+
 const ALL_DIRECTIONS: ResizeDirection[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 const source = readFileSync(`${process.cwd()}/src/hooks/useResizable.ts`, 'utf8');
 
@@ -275,6 +279,229 @@ describe('useResizable', () => {
       const lastCall = onPositionChange.mock.calls[onPositionChange.mock.calls.length - 1][0];
       expect(lastCall.x).toBeLessThanOrEqual(200);
       expect(lastCall.y).toBeLessThanOrEqual(150);
+    });
+  });
+
+  describe('pointer event resize', () => {
+    it('resizes width when dragging east handle', () => {
+      const { result } = renderHook(() => useResizable());
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('e');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 150,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      // Drag right by 100px — width should increase by 100
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 500, clientY: 150, pointerId: 1 }));
+      });
+
+      expect(result.current.size.width).toBe(500);
+      // Height unchanged for pure 'e' direction
+      expect(result.current.size.height).toBe(300);
+
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 500, clientY: 150, pointerId: 1 }));
+      });
+
+      expect(currentTarget.releasePointerCapture).toHaveBeenCalledWith(1);
+    });
+
+    it('resizes width and height when dragging south-east corner', () => {
+      const { result } = renderHook(() => useResizable());
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('se');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 300,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      // Drag diagonally: +120 width, +80 height
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 520, clientY: 380, pointerId: 1 }));
+      });
+
+      expect(result.current.size.width).toBe(520);
+      expect(result.current.size.height).toBe(380);
+
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 520, clientY: 380, pointerId: 1 }));
+      });
+
+      expect(currentTarget.releasePointerCapture).toHaveBeenCalledWith(1);
+    });
+
+    it('respects minWidth and minHeight during resize', () => {
+      const { result } = renderHook(() =>
+        useResizable({ minWidth: 250, minHeight: 150 }),
+      );
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('se');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 300,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      // Drag inward past min constraints
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 100, clientY: 100, pointerId: 1 }));
+      });
+
+      expect(result.current.size.width).toBe(250);
+      expect(result.current.size.height).toBe(150);
+    });
+
+    it('clamps position during resize when clampToViewport is enabled', () => {
+      // window at right edge, resize to push it out
+      Object.defineProperty(window, 'innerWidth', { value: 600, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 600, writable: true });
+
+      const { result } = renderHook(() =>
+        useResizable({
+          initialX: 200,
+          initialY: 200,
+          initialWidth: 400,
+          initialHeight: 300,
+          clampToViewport: true,
+        }),
+      );
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('e');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 600,
+          clientY: 350,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      // Drag right beyond viewport boundary
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 800, clientY: 350, pointerId: 1 }));
+      });
+
+      // Width should be clamped to viewport
+      expect(result.current.size.width).toBeLessThanOrEqual(600);
+    });
+
+    it('cleans up listeners and releases capture on pointerup', () => {
+      const removeSpy = vi.spyOn(window, 'removeEventListener');
+      const { result } = renderHook(() => useResizable());
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('e');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 150,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 500, clientY: 150, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 500, clientY: 150, pointerId: 1 }));
+      });
+
+      expect(removeSpy).toHaveBeenCalledWith('pointermove', expect.any(Function));
+      expect(removeSpy).toHaveBeenCalledWith('pointerup', expect.any(Function));
+      expect(currentTarget.releasePointerCapture).toHaveBeenCalledWith(1);
+
+      removeSpy.mockRestore();
+    });
+
+    it('ignores pointermove from a different pointerId', () => {
+      const { result } = renderHook(() => useResizable());
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('e');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 150,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      // Dispatch pointermove with different pointerId
+      act(() => {
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 700, clientY: 150, pointerId: 2 }));
+      });
+
+      // Size should be unchanged because pointerId 2 is ignored
+      expect(result.current.size.width).toBe(400);
+    });
+
+    it('registers pointer capture on the handle element', () => {
+      const { result } = renderHook(() => useResizable());
+
+      const currentTarget = document.createElement('div');
+      currentTarget.setPointerCapture = vi.fn();
+      currentTarget.releasePointerCapture = vi.fn();
+
+      const handleProps = result.current.getResizeHandleProps('e');
+      act(() => {
+        handleProps.onPointerDown({
+          clientX: 400,
+          clientY: 150,
+          pointerId: 1,
+          stopPropagation: vi.fn(),
+          target: document.createElement('div'),
+          currentTarget,
+        } as unknown as React.PointerEvent);
+      });
+
+      expect(currentTarget.setPointerCapture).toHaveBeenCalledWith(1);
     });
   });
 });

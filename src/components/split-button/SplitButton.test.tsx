@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SplitButton } from './SplitButton';
 
 describe('SplitButton', () => {
@@ -123,5 +124,41 @@ describe('SplitButton', () => {
     );
 
     expect(container.firstChild).toHaveClass('my-split');
+  });
+
+  it('Escape key closes open menu', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <SplitButton
+        icon="icon.png"
+        items={[{ label: 'Item' }]}
+      />,
+    );
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('renders checked item through the child Menu', () => {
+    render(
+      <SplitButton
+        icon="icon.png"
+        items={[{ label: 'Toggle Item', checked: true }]}
+      />,
+    );
+
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    // The checked item should show the checkmark via the Menu child
+    const menuItem = screen.getByText('Toggle Item').closest('[role="menuitem"]');
+    expect(menuItem).toHaveTextContent('✓');
   });
 });

@@ -243,6 +243,7 @@ export function FileExplorer({
     cutToClipboard,
     paste,
     hasClipboard,
+    historyPaths,
   } = useFileSystem(DEFAULT_FS);
 
   const displayPath = getDisplayPath();
@@ -361,6 +362,7 @@ export function FileExplorer({
         <AddressBar
           value={displayPath}
           onNavigate={navigate}
+          history={historyPaths.map((p) => ({ path: p }))}
           label="アドレス(D):"
         />
         <div className={styles.groove} />

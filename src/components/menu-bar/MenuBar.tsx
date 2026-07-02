@@ -197,7 +197,7 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
               [styles.menuItemDisabled]: item.disabled,
               [styles.menuItemFocused]: focused,
             })}
-            onMouseEnter={() => !isSubmenu && handleSubmenuEnter(i)}
+            onMouseEnter={() => !isSubmenu && !item.disabled && handleSubmenuEnter(i)}
             onMouseLeave={!isSubmenu ? handleSubmenuLeave : undefined}
             role="menuitem"
             aria-haspopup="true"

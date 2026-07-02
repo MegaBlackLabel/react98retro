@@ -271,4 +271,109 @@ describe('FileExplorer', () => {
     navigateToDrive();
     expect(addressSelect).toHaveValue('C:');
   });
+
+  // ═══════════════════════════════════════════
+  // Task 7: Behavioral integration tests
+  // ═══════════════════════════════════════════
+
+  // ── Navigation history: Back/Forward ──
+  it('navigates back and forward through history and shows correct address and rows', () => {
+    render(<FileExplorer />);
+
+    // root → C:
+    navigateToDrive();
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('C:');
+
+    // C: → WINDOWS
+    navigateToWindows();
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('C:\\WINDOWS');
+    expect(requireRow('Temp')).toBeInTheDocument();
+
+    // Back → C:
+    fireEvent.click(screen.getByRole('button', { name: '戻る' }));
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('C:');
+    expect(requireRow('WINDOWS')).toBeInTheDocument();
+    expect(requireRow('My Documents')).toBeInTheDocument();
+    expect(screen.getByText(/5 個のオブジェクト/)).toBeInTheDocument();
+
+    // Forward → WINDOWS
+    fireEvent.click(screen.getByRole('button', { name: '進む' }));
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('C:\\WINDOWS');
+    expect(requireRow('Temp')).toBeInTheDocument();
+  });
+
+  // ── Up button / root edge ──
+  it('disables up at root and navigates up to correct parent from subfolders', () => {
+    render(<FileExplorer />);
+
+    // At root, Up is disabled
+    expect(screen.getByRole('button', { name: '上へ' })).toBeDisabled();
+
+    // navigate C: → Up back to root
+    navigateToDrive();
+    expect(screen.getByRole('button', { name: '上へ' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '上へ' }));
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('マイコンピュータ');
+    expect(requireRow('ローカルディスク (C:)')).toBeInTheDocument();
+
+    // navigate C: → WINDOWS → Up back to C:
+    navigateToDrive();
+    navigateToWindows();
+    fireEvent.click(screen.getByRole('button', { name: '上へ' }));
+    expect(screen.getByLabelText('アドレス(D):')).toHaveValue('C:');
+    expect(requireRow('WINDOWS')).toBeInTheDocument();
+    expect(screen.getByText(/5 個のオブジェクト/)).toBeInTheDocument();
+  });
+
+  // ── AddressBar history-based navigation ──
+  it('shows history entries in address bar dropdown and navigates by selecting one', () => {
+    render(<FileExplorer />);
+
+    navigateToDrive();
+    navigateToWindows();
+
+    const addressSelect = screen.getByLabelText('アドレス(D):') as HTMLSelectElement;
+    expect(addressSelect).toHaveValue('C:\\WINDOWS');
+
+    // History entries should be available in the dropdown
+    const options = Array.from(addressSelect.querySelectorAll('option'));
+    const optionValues = options.map((o) => o.value);
+    expect(optionValues).toContain('C:');
+    expect(optionValues).toContain('C:\\WINDOWS');
+
+    // Select 'C:' from dropdown to navigate back
+    fireEvent.change(addressSelect, { target: { value: 'C:' } });
+    expect(addressSelect).toHaveValue('C:');
+    expect(requireRow('WINDOWS')).toBeInTheDocument();
+    expect(requireRow('My Documents')).toBeInTheDocument();
+    expect(screen.getByText(/5 個のオブジェクト/)).toBeInTheDocument();
+  });
+
+  // ── Splitter drag resizes left pane ──
+  it('changes left pane width via splitter drag and clamps at minimum', () => {
+    const { container } = render(<FileExplorer />);
+
+    const splitter = container.querySelector('[class*="splitter"]') as HTMLElement;
+    expect(splitter).toBeInTheDocument();
+
+    const leftPane = splitter.previousElementSibling as HTMLElement;
+    expect(leftPane).toBeInTheDocument();
+    expect(leftPane.style.width).toBe('200px');
+
+    // Drag splitter right: startX=200, move to 350 → width = 200+(350-200)=350
+    fireEvent.mouseDown(splitter, { clientX: 200 });
+    fireEvent.mouseMove(document, { clientX: 350 });
+    expect(leftPane.style.width).toBe('350px');
+
+    // Drag further right to 500
+    fireEvent.mouseMove(document, { clientX: 500 });
+    expect(leftPane.style.width).toBe('500px');
+
+    // Drag far left → clamped at 60px
+    fireEvent.mouseMove(document, { clientX: 50 });
+    expect(leftPane.style.width).toBe('60px');
+
+    // Release to finish drag
+    fireEvent.mouseUp(document);
+  });
 });

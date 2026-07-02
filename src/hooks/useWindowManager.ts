@@ -96,7 +96,7 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
   const minimize = useCallback((id: string) => {
     setWindows((prev) => {
       if (!prev[id]) return prev;
-      return { ...prev, [id]: { ...prev[id], minimized: true } };
+      return { ...prev, [id]: { ...prev[id], minimized: true, maximized: false } };
     });
   }, []);
 

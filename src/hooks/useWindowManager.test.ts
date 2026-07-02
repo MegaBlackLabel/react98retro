@@ -344,3 +344,136 @@ describe('useWindowManager', () => {
     expect(result.current.preShrinkGeometries['win1']).toBeUndefined();
   });
 });
+
+  describe('noop guards for non-existent windows', () => {
+    it('minimize on unknown id returns state unchanged', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.minimize('no-such-window');
+      });
+
+      expect(result.current.windows).toBe(before);
+      expect(result.current.windows['no-such-window']).toBeUndefined();
+    });
+
+    it('maximize on unknown id returns state unchanged', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.maximize('no-such-window');
+      });
+
+      expect(result.current.windows).toBe(before);
+    });
+
+    it('restore on unknown id returns state unchanged', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.restore('no-such-window');
+      });
+
+      expect(result.current.windows).toBe(before);
+    });
+
+    it('focus on unknown id returns state unchanged', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.focus('no-such-window');
+      });
+
+      expect(result.current.windows).toBe(before);
+    });
+
+    it('register with an already-existing id preserves the existing window', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows['win1'];
+      act(() => {
+        result.current.register('win1');
+      });
+
+      // Reference equality: the same window object should survive
+      expect(result.current.windows['win1']).toBe(before);
+    });
+
+    it('unregister of unknown id is a no-op', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.unregister('no-such-window');
+      });
+
+      expect(result.current.windows).toBe(before);
+      expect(result.current.windows['win1']).toBeDefined();
+    });
+
+    it('setWindowSnapped on unknown id returns state unchanged', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      const before = result.current.windows;
+      act(() => {
+        result.current.setWindowSnapped('no-such-window', true);
+      });
+
+      expect(result.current.windows).toBe(before);
+    });
+
+    it('setWindowSnapped with same value does not replace the window object', () => {
+      const { result } = renderHook(() => useWindowManager(['win1']));
+
+      act(() => {
+        result.current.setWindowSnapped('win1', false);
+      });
+      const afterFirst = result.current.windows['win1'];
+
+      act(() => {
+        result.current.setWindowSnapped('win1', false);
+      });
+
+      expect(result.current.windows['win1']).toBe(afterFirst);
+    });
+  });
+
+  it('minimize preserves zIndex and activeWindowId after focal sequence', () => {
+    const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+
+    act(() => {
+      result.current.focus('win1');
+    });
+    const zIndexAfterFocus = result.current.windows['win1'].zIndex;
+    expect(result.current.activeWindowId).toBe('win1');
+
+    act(() => {
+      result.current.minimize('win1');
+    });
+    // activeWindowId is unchanged by minimize
+    expect(result.current.activeWindowId).toBe('win1');
+    // zIndex is unchanged by minimize
+    expect(result.current.windows['win1'].zIndex).toBe(zIndexAfterFocus);
+  });
+
+  it('minimize clears maximized flag for consistent state', () => {
+    const { result } = renderHook(() => useWindowManager(['win1']));
+
+    act(() => {
+      result.current.maximize('win1');
+    });
+    expect(result.current.windows['win1'].maximized).toBe(true);
+    expect(result.current.windows['win1'].minimized).toBe(false);
+
+    act(() => {
+      result.current.minimize('win1');
+    });
+
+    // A window cannot be both maximized and minimized — minimize must clear maximized
+    expect(result.current.windows['win1'].minimized).toBe(true);
+    expect(result.current.windows['win1'].maximized).toBe(false);
+  });

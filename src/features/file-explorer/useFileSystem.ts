@@ -357,9 +357,22 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
   }, []);
 
   const goUp = useCallback(() => {
-    const parent = findNode(currentPathRef.current)?.id ? getParentId(currentPathRef.current) : null;
-    if (parent) navigate(parent);
-  }, [findNode, navigate]);
+    const currentId = currentPathRef.current;
+    if (currentId === 'my-computer') return;
+
+    const parentId = getParentId(currentId);
+    if (parentId) {
+      navigate(parentId);
+      return;
+    }
+
+    // Fallback for drive roots: string-based getParentId returns null,
+    // but the tree has a real parent (e.g. C: → my-computer).
+    const entry = findNodeEntry(currentId, fsRef.current);
+    if (entry?.parent) {
+      navigate(entry.parent.id);
+    }
+  }, [navigate]);
 
   const createFolder = useCallback((parentId: string, name: string) => {
     const parent = findNode(parentId);
@@ -556,6 +569,7 @@ export function useFileSystem(initialFs: FSNode[] = DEFAULT_FS) {
     canGoBack: history.currentIndex > 0,
     canGoForward: history.currentIndex < history.paths.length - 1,
     canGoUp: currentPath !== 'my-computer',
+    historyPaths: history.paths,
     getDisplayPath,
     findNode,
     createFolder,

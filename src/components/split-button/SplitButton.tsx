@@ -63,6 +63,11 @@ export function SplitButton({
         })}
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setIsOpen(false);
+          }
+        }}
         aria-label={ariaLabel ? `${ariaLabel} メニューを開く` : 'メニューを開く'}
         aria-haspopup="true"
         aria-expanded={isOpen}

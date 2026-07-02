@@ -66,4 +66,72 @@ describe('TreeView', () => {
       color: 'rgb(255, 255, 255)',
     });
   });
+
+  it('defaultOpen sets <details open> on expandable items', () => {
+    render(
+      <TreeView
+        items={[
+          {
+            id: 'folder',
+            label: 'Folder',
+            defaultOpen: true,
+            children: [{ id: 'child', label: 'Child' }],
+          },
+        ]}
+      />,
+    );
+
+    const details = screen.getByText('Folder').closest('details');
+    expect(details).toHaveAttribute('open');
+  });
+
+  it('three-level nested tree renders all items', () => {
+    render(
+      <TreeView
+        items={[
+          {
+            id: 'level1',
+            label: 'Level 1',
+            defaultOpen: true,
+            children: [
+              {
+                id: 'level2',
+                label: 'Level 2',
+                defaultOpen: true,
+                children: [{ id: 'level3', label: 'Level 3' }],
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Level 1')).toBeInTheDocument();
+    expect(screen.getByText('Level 2')).toBeInTheDocument();
+    expect(screen.getByText('Level 3')).toBeInTheDocument();
+  });
+
+  it('pressing Enter on a focused leaf triggers onSelect', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<TreeView items={[{ id: 'file-1', label: 'File 1' }]} onSelect={onSelect} />);
+
+    const leaf = screen.getByText('File 1').closest('li')!;
+    leaf.focus();
+
+    await user.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledWith('file-1');
+  });
+
+  it('pressing Space on a focused leaf triggers onSelect', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(<TreeView items={[{ id: 'file-1', label: 'File 1' }]} onSelect={onSelect} />);
+
+    const leaf = screen.getByText('File 1').closest('li')!;
+    leaf.focus();
+
+    await user.keyboard(' ');
+    expect(onSelect).toHaveBeenCalledWith('file-1');
+  });
 });

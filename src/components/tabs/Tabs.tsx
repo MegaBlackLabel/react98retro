@@ -60,9 +60,43 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
       onTabChange?.(id);
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      const enabledTabs = tabs.filter((t) => !t.disabled);
+      if (enabledTabs.length === 0) return;
+
+      const currentIdx = enabledTabs.findIndex((t) => t.id === activeTabId);
+      const actualIdx = currentIdx === -1 ? 0 : currentIdx;
+
+      let nextIdx: number | null = null;
+
+      switch (e.key) {
+        case 'ArrowRight':
+          nextIdx = (actualIdx + 1) % enabledTabs.length;
+          break;
+        case 'ArrowLeft':
+          nextIdx = (actualIdx - 1 + enabledTabs.length) % enabledTabs.length;
+          break;
+        case 'Home':
+          nextIdx = 0;
+          break;
+        case 'End':
+          nextIdx = enabledTabs.length - 1;
+          break;
+        default:
+          break;
+          return;
+      }
+
+      if (nextIdx !== null) {
+        e.preventDefault();
+        const nextTab = enabledTabs[nextIdx];
+        handleTabClick(nextTab.id);
+      }
+    };
+
     return (
       <div ref={ref} className={className} {...props}>
-        <menu role="tablist" className={clsx({ multirows })}>
+        <menu role="tablist" className={clsx({ multirows })} onKeyDown={handleKeyDown}>
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
 

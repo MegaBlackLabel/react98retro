@@ -28,3 +28,6 @@ coverage
 storybook-static
 
 .sisyphus/
+
+.omo/
+.playwright-mcp/

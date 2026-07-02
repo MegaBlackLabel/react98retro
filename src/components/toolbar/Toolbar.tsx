@@ -77,7 +77,7 @@ export function Toolbar({ items, className, ...rest }: ToolbarProps) {
   }, [openDropdownId]);
 
   return (
-    <div ref={containerRef} className={clsx(styles.toolbar, className)} {...rest}>
+    <div ref={containerRef} role="toolbar" className={clsx(styles.toolbar, className)} {...rest}>
       <div className={styles.grip} aria-hidden="true" />
       {items.map((item, i) => {
         if (item.type === 'separator') {
