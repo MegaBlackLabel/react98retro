@@ -1,6 +1,7 @@
 .resizeHandle {
   position: absolute;
   z-index: 10;
+  touch-action: none;
 }
 
 .n  { top: -3px;    left: 3px;    right: 3px;   height: 6px;  cursor: n-resize; }
@@ -12,7 +13,7 @@
 .sw { bottom: -3px; left: -3px;   width: 10px;  height: 10px; cursor: sw-resize; }
 .nw { top: -3px;    left: -3px;   width: 10px;  height: 10px; cursor: nw-resize; }
 
-/* Visual size grip – 3 diagonal raised lines, clipped to triangle */
+/* Visual size grip with 3 diagonal raised lines, clipped to triangle */
 .sizeGrip {
   position: absolute;
   bottom: 2px;
@@ -21,9 +22,8 @@
   height: 13px;
   cursor: se-resize;
   z-index: 11;
-  /* Clip to lower-right triangle so lines get shorter away from corner */
+  touch-action: none;
   clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
-  /* 3 diagonal lines: 1px white highlight + 1px gray shadow each */
   background:
     linear-gradient(135deg,
       transparent calc(100% - 4px),

@@ -145,6 +145,9 @@ export function useResizable(options?: {
     target: Element;
   } | null>(null);
 
+  const rafIdRef = useRef<number | null>(null);
+  const pendingResizeRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
   // 最新の position と size を ref で保持（stale closure 防止）
   const positionRef = useRef(position);
   const sizeRef = useRef(size);
@@ -187,15 +190,25 @@ export function useResizable(options?: {
         newY = startY + startHeight - newHeight;
       }
 
-      // Clamp to viewport if enabled
-      if (clampToViewportEnabled) {
-        const clamped = clampToViewport(newX, newY, newWidth, newHeight);
-        setSize({ width: clamped.width, height: clamped.height });
-        setPosition({ x: clamped.x, y: clamped.y });
-      } else {
-        setSize({ width: newWidth, height: newHeight });
-        setPosition({ x: newX, y: newY });
-      }
+      // Throttle to rAF for GPU-smooth resize
+      pendingResizeRef.current = { x: newX, y: newY, width: newWidth, height: newHeight };
+      if (rafIdRef.current !== null) return;
+
+      rafIdRef.current = window.requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        if (pendingResizeRef.current) {
+          const r = pendingResizeRef.current;
+          pendingResizeRef.current = null;
+          if (clampToViewportEnabled) {
+            const clamped = clampToViewport(r.x, r.y, r.width, r.height);
+            setSize({ width: clamped.width, height: clamped.height });
+            setPosition({ x: clamped.x, y: clamped.y });
+          } else {
+            setSize({ width: r.width, height: r.height });
+            setPosition({ x: r.x, y: r.y });
+          }
+        }
+      });
     },
     [minWidth, minHeight, setPosition, clampToViewportEnabled],
   );
@@ -203,6 +216,14 @@ export function useResizable(options?: {
   const onPointerUp = useCallback(
     (e: PointerEvent) => {
       if (!resizeState.current || e.pointerId !== resizeState.current.pointerId) return;
+
+      // Cancel pending rAF
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+        pendingResizeRef.current = null;
+      }
+
       resizeState.current.target.releasePointerCapture(e.pointerId);
       window.removeEventListener('pointermove', listenersRef.current.move);
       window.removeEventListener('pointerup', listenersRef.current.up);
@@ -216,6 +237,18 @@ export function useResizable(options?: {
     move: onPointerMove,
     up: onPointerUp,
   };
+
+  // Cleanup on unmount: cancel pending rAF and remove window listeners
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      window.removeEventListener('pointermove', listenersRef.current.move);
+      window.removeEventListener('pointerup', listenersRef.current.up);
+    };
+  }, []);
 
   const getResizeHandleProps = useCallback(
     (direction: ResizeDirection) => ({

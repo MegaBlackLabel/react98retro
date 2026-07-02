@@ -45,10 +45,11 @@ function getResponsiveSize(
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
 
-  // On narrow viewports, use almost full width with some padding
+  // On narrow viewports (< 640px), use tighter margins for mobile
   const isNarrow = viewportWidth < 640;
-  const responsiveWidth = isNarrow ? Math.min(width, viewportWidth - 16) : Math.min(width, viewportWidth - 32);
-  const responsiveHeight = Math.min(height, viewportHeight - 32);
+  const margin = isNarrow ? 8 : 32;
+  const responsiveWidth = Math.min(width, viewportWidth - margin);
+  const responsiveHeight = Math.min(height, viewportHeight - margin);
 
   // Clamp position to keep window in viewport
   const maxX = Math.max(0, viewportWidth - responsiveWidth);
@@ -57,8 +58,8 @@ function getResponsiveSize(
   return {
     width: responsiveWidth,
     height: responsiveHeight,
-    x: Math.max(8, Math.min(initialX, maxX)),
-    y: Math.max(8, Math.min(initialY, maxY)),
+    x: Math.max(isNarrow ? 4 : 8, Math.min(initialX, maxX)),
+    y: Math.max(isNarrow ? 4 : 8, Math.min(initialY, maxY)),
   };
 }
 
@@ -78,7 +79,7 @@ export function Window({
   onMaximize,
   onRestore,
   onClose,
-  snapEnabled = true,
+  snapEnabled: snapEnabledProp,
   snapThreshold = 20,
   autoMoveOnSnap: autoMoveOnSnapProp,
   style,
@@ -88,9 +89,13 @@ export function Window({
 }: WindowProps) {
   const context = useWindowManagerContext();
   const isManaged = context !== null;
+  const isMobile = context?.isMobile ?? false;
   const autoMoveOnSnap = autoMoveOnSnapProp ?? context?.autoMoveOnSnap ?? false;
   const generatedId = useId();
   const effectiveWindowId = isManaged ? (windowId ?? generatedId) : undefined;
+
+  // snapEnabled default: true on desktop, false on mobile (opt-in via prop)
+  const snapEnabled = snapEnabledProp ?? !isMobile;
 
   const titleBarRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
@@ -348,7 +353,7 @@ export function Window({
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
         ...style,
       }
     : {
