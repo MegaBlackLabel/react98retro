@@ -245,6 +245,15 @@ export function FileExplorer({
     hasClipboard,
     historyPaths,
   } = useFileSystem(DEFAULT_FS);
+  const getHistoryPath = (pathId: string): string => {
+    if (pathId === 'my-computer') return 'マイコンピュータ';
+    return pathId;
+  };
+
+  const historyOptions = useMemo(
+    () => historyPaths.filter((p) => p !== currentPath).map((p) => ({ path: getHistoryPath(p) })),
+    [historyPaths, currentPath],
+  );
 
   const displayPath = getDisplayPath();
   const title =
@@ -362,7 +371,7 @@ export function FileExplorer({
         <AddressBar
           value={displayPath}
           onNavigate={navigate}
-          history={historyPaths.map((p) => ({ path: p }))}
+          history={historyOptions}
           label="アドレス(D):"
         />
         <div className={styles.groove} />

@@ -83,7 +83,6 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
           nextIdx = enabledTabs.length - 1;
           break;
         default:
-          break;
           return;
       }
 
