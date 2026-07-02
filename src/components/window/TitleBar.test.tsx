@@ -77,4 +77,19 @@ describe('TitleBar', () => {
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', '/icon.png');
   });
+
+  it('does not enlarge title bar buttons on touch devices (no pointer:coarse min-size override)', async () => {
+    const { default: titleBarStyles } = await import('./TitleBar.module.css?raw');
+    const rawCss =
+      typeof titleBarStyles === 'string'
+        ? titleBarStyles
+        : await import('node:fs/promises').then(({ readFile }) =>
+            readFile(join(process.cwd(), 'src/components/window/TitleBar.module.css'), 'utf8'),
+          );
+
+    // TitleBar must not contain any pointer:coarse media rule
+    // — it would enlarge buttons and make the title bar too thick on mobile.
+    const coarseRule = rawCss.match(/@media\s*\(\s*pointer\s*:\s*coarse\s*\)/);
+    expect(coarseRule).toBeNull();
+  });
 });
