@@ -361,19 +361,19 @@ describe('FileExplorer', () => {
     expect(leftPane.style.width).toBe('200px');
 
     // Drag splitter right: startX=200, move to 350 → width = 200+(350-200)=350
-    fireEvent.mouseDown(splitter, { clientX: 200 });
-    fireEvent.mouseMove(document, { clientX: 350 });
+    fireEvent.pointerDown(splitter, { clientX: 200, pointerId: 0 });
+    fireEvent.pointerMove(window, { clientX: 350, pointerId: 0 });
     expect(leftPane.style.width).toBe('350px');
 
     // Drag further right to 500
-    fireEvent.mouseMove(document, { clientX: 500 });
+    fireEvent.pointerMove(window, { clientX: 500, pointerId: 0 });
     expect(leftPane.style.width).toBe('500px');
 
     // Drag far left → clamped at 60px
-    fireEvent.mouseMove(document, { clientX: 50 });
+    fireEvent.pointerMove(window, { clientX: 50, pointerId: 0 });
     expect(leftPane.style.width).toBe('60px');
 
     // Release to finish drag
-    fireEvent.mouseUp(document);
+    fireEvent.pointerUp(window, { pointerId: 0 });
   });
 });

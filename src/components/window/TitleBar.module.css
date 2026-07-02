@@ -3,6 +3,7 @@
   padding: 2px 2px 2px 3px !important;
   align-items: center !important;
   cursor: move !important;
+  touch-action: none;
 }
 
 .titleBar:global(.inactive) {
@@ -23,6 +24,14 @@
   min-width: 16px !important;
   min-height: 14px !important;
   cursor: pointer !important;
+}
+
+/* Enlarge button touch targets on coarse pointers (WCAG AA: ≥24px) */
+@media (pointer: coarse) {
+  .titleBar :global(.title-bar-controls) button {
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
 }
 
 .titleBarLeft {

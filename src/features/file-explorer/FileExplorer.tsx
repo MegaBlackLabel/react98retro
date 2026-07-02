@@ -198,27 +198,39 @@ export function FileExplorer({
   onClose,
 }: FileExplorerProps) {
   const [leftWidth, setLeftWidth] = useState(200);
-  const dragState = useRef<{ startX: number; startWidth: number } | null>(null);
+  const dragState = useRef<{ startX: number; startWidth: number; pointerId: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('details');
 
-  const handleSplitterMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleSplitterPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
-    dragState.current = { startX: e.clientX, startWidth: leftWidth };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    dragState.current = { startX: e.clientX, startWidth: leftWidth, pointerId: e.pointerId };
 
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      if (!dragState.current) return;
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!dragState.current || moveEvent.pointerId !== dragState.current.pointerId) return;
       const delta = moveEvent.clientX - dragState.current.startX;
       setLeftWidth(Math.max(60, dragState.current.startWidth + delta));
     };
 
-    const onMouseUp = () => {
+    const onPointerUp = (upEvent: PointerEvent) => {
+      if (!dragState.current || upEvent.pointerId !== dragState.current.pointerId) return;
       dragState.current = null;
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
     };
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    const onPointerCancel = (cancelEvent: PointerEvent) => {
+      if (!dragState.current || cancelEvent.pointerId !== dragState.current.pointerId) return;
+      dragState.current = null;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
   }, [leftWidth]);
 
   const {
@@ -385,7 +397,7 @@ export function FileExplorer({
           </div>
           <div
             className={styles.splitter}
-            onMouseDown={handleSplitterMouseDown}
+            onPointerDown={handleSplitterPointerDown}
           />
           <div className={styles.rightPane}>
             <FileList

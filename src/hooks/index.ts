@@ -6,3 +6,6 @@ export type { ResizeDirection, UseResizableResult } from './useResizable';
 
 export { useWindowManager } from './useWindowManager';
 export type { WindowState, UseWindowManagerResult } from './useWindowManager';
+
+export { useMobile } from './useMobile';
+export type { UseMobileResult } from './useMobile';

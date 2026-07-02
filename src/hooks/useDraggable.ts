@@ -109,6 +109,10 @@ export function useDraggable(options?: {
     target: Element;
   } | null>(null);
 
+  const rafIdRef = useRef<number | null>(null);
+  const pendingPositionRef = useRef<DraggablePosition | null>(null);
+  const latestPointerRef = useRef<{ clientX: number; clientY: number }>({ clientX: 0, clientY: 0 });
+
   const listenersRef = useRef<{
     move: (e: PointerEvent) => void;
     up: (e: PointerEvent) => void;
@@ -145,37 +149,50 @@ export function useDraggable(options?: {
       if (!dragState.current || e.pointerId !== dragState.current.pointerId) return;
       const dx = e.clientX - dragState.current.startMouseX;
       const dy = e.clientY - dragState.current.startMouseY;
-      setPosition({
+      const nextPos: DraggablePosition = {
         x: dragState.current.startX + dx,
         y: dragState.current.startY + dy,
-      });
+      };
 
-      if (snapOptionsRef.current.snapEnabled === false) {
-        if (snapTargetRef.current !== null) {
-          snapTargetRef.current = null;
-          setSnapTarget(null);
+      // Throttle position updates to rAF to avoid layout thrash
+      pendingPositionRef.current = nextPos;
+      latestPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
+      if (rafIdRef.current !== null) return; // rAF already pending
+
+      rafIdRef.current = window.requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        if (pendingPositionRef.current) {
+          setPosition(pendingPositionRef.current);
+          pendingPositionRef.current = null;
+
+          if (snapOptionsRef.current.snapEnabled === false) {
+            if (snapTargetRef.current !== null) {
+              snapTargetRef.current = null;
+              setSnapTarget(null);
+            }
+            return;
+          }
+
+          const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+          const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+          const nextSnapTarget = getSnapTarget({
+            pointerX: latestPointerRef.current.clientX,
+            pointerY: latestPointerRef.current.clientY,
+            viewportWidth,
+            viewportHeight,
+            threshold: snapOptionsRef.current.snapThreshold,
+            minWidth: snapOptionsRef.current.minWidth,
+            minHeight: snapOptionsRef.current.minHeight,
+          });
+
+          if (nextSnapTarget?.zone !== snapTargetRef.current?.zone) {
+            snapTargetRef.current = nextSnapTarget;
+            setSnapTarget(nextSnapTarget);
+          } else {
+            snapTargetRef.current = nextSnapTarget;
+          }
         }
-        return;
-      }
-
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-      const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
-      const nextSnapTarget = getSnapTarget({
-        pointerX: e.clientX,
-        pointerY: e.clientY,
-        viewportWidth,
-        viewportHeight,
-        threshold: snapOptionsRef.current.snapThreshold,
-        minWidth: snapOptionsRef.current.minWidth,
-        minHeight: snapOptionsRef.current.minHeight,
       });
-
-      if (nextSnapTarget?.zone !== snapTargetRef.current?.zone) {
-        snapTargetRef.current = nextSnapTarget;
-        setSnapTarget(nextSnapTarget);
-      } else {
-        snapTargetRef.current = nextSnapTarget;
-      }
     },
     [setPosition, setSnapTarget],
   );
@@ -184,6 +201,14 @@ export function useDraggable(options?: {
     (pointerId: number) => {
       const currentDragState = dragState.current;
       if (!currentDragState || currentDragState.pointerId !== pointerId) return;
+
+      // Cancel pending rAF
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+        pendingPositionRef.current = null;
+      }
+
       currentDragState.target.releasePointerCapture(pointerId);
       window.removeEventListener('pointermove', listenersRef.current.move);
       window.removeEventListener('pointerup', listenersRef.current.up);

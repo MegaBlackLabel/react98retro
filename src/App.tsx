@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileExplorer } from './features/file-explorer/FileExplorer';
 import { Win98Provider } from './components/Win98Provider';
+import { useMobile } from './hooks/useMobile';
 
 interface ExplorerConfig {
   id: string;
@@ -28,6 +29,7 @@ const EXPLORERS: ExplorerConfig[] = [
 ];
 
 function App() {
+  const { isMobile } = useMobile();
   const [openExplorers, setOpenExplorers] = useState<Set<string>>(
     () => new Set(EXPLORERS.map((e) => e.id))
   );
@@ -41,7 +43,7 @@ function App() {
   };
 
   return (
-    <Win98Provider autoMoveOnSnap style={{ width: '100vw', height: '100vh', background: '#008080', position: 'relative', overflow: 'hidden' }}>
+    <Win98Provider autoMoveOnSnap mobile={isMobile} style={{ width: '100vw', height: '100dvh', background: '#008080', position: 'relative', overflow: 'hidden' }}>
       {EXPLORERS.map((explorer) =>
         openExplorers.has(explorer.id) ? (
           <FileExplorer
