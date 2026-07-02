@@ -87,10 +87,9 @@ describe('TitleBar', () => {
             readFile(join(process.cwd(), 'src/components/window/TitleBar.module.css'), 'utf8'),
           );
 
-    // There must be NO @media (pointer: coarse) block that enlarges buttons
-    // because that would make the title bar too thick on mobile devices.
-    // Instead, base button sizing (16x14) should apply uniformly.
-    const coarseBlock = rawCss.match(/@media\s*\(\s*pointer\s*:\s*coarse\s*\)\s*\{[^}]*min-(width|height)\s*:\s*24px[^}]*\}/s);
-    expect(coarseBlock).toBeNull();
+    // TitleBar must not contain any pointer:coarse media rule
+    // — it would enlarge buttons and make the title bar too thick on mobile.
+    const coarseRule = rawCss.match(/@media\s*\(\s*pointer\s*:\s*coarse\s*\)/);
+    expect(coarseRule).toBeNull();
   });
 });
