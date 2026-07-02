@@ -26,13 +26,6 @@
   cursor: pointer !important;
 }
 
-/* Enlarge button touch targets on coarse pointers (WCAG AA: ≥24px) */
-@media (pointer: coarse) {
-  .titleBar :global(.title-bar-controls) button {
-    min-width: 24px !important;
-    min-height: 24px !important;
-  }
-}
 
 .titleBarLeft {
   display: flex;

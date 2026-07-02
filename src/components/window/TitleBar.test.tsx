@@ -77,4 +77,20 @@ describe('TitleBar', () => {
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', '/icon.png');
   });
+
+  it('does not enlarge title bar buttons on touch devices (no pointer:coarse min-size override)', async () => {
+    const { default: titleBarStyles } = await import('./TitleBar.module.css?raw');
+    const rawCss =
+      typeof titleBarStyles === 'string'
+        ? titleBarStyles
+        : await import('node:fs/promises').then(({ readFile }) =>
+            readFile(join(process.cwd(), 'src/components/window/TitleBar.module.css'), 'utf8'),
+          );
+
+    // There must be NO @media (pointer: coarse) block that enlarges buttons
+    // because that would make the title bar too thick on mobile devices.
+    // Instead, base button sizing (16x14) should apply uniformly.
+    const coarseBlock = rawCss.match(/@media\s*\(\s*pointer\s*:\s*coarse\s*\)\s*\{[^}]*min-(width|height)\s*:\s*24px[^}]*\}/s);
+    expect(coarseBlock).toBeNull();
+  });
 });
