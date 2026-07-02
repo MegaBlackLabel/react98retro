@@ -3,7 +3,7 @@
   padding: 2px 2px 2px 3px !important;
   align-items: center !important;
   cursor: move !important;
-  touch-action: none;
+  touch-action: none !important;
 }
 
 .titleBar:global(.inactive) {
