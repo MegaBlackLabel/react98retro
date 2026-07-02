@@ -35,7 +35,7 @@ export const TitleBar = forwardRef<HTMLDivElement, TitleBarProps>(function Title
   ref,
 ) {
   return (
-    <div ref={ref} className={clsx('title-bar', styles.titleBar, { inactive }, className)} {...rest}>
+    <div ref={ref} className={clsx('title-bar', styles.titleBar, { inactive }, className)} {...rest} style={{ touchAction: 'none', ...(rest.style as React.CSSProperties) }}>
       <div className={styles.titleBarLeft}>
         {icon && (
           <img src={icon} alt="" style={{ width: 14, height: 14, flexShrink: 0 }} />
