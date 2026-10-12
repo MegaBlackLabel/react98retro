@@ -128,13 +128,21 @@ export function Window({
   const preShrinkGeometries = context?.preShrinkGeometries;
 
   // Managed mode: register/unregister with window manager
+  // (タイトルなどの表示情報は別 effect で更新する。ここで title を依存に入れると
+  //  動的タイトルのたびに unregister → register が走り、z 順・最小化状態が失われる)
   useEffect(() => {
     if (!isManaged || !effectiveWindowId || !register || !unregister) return;
-    register(effectiveWindowId, { title, icon });
+    register(effectiveWindowId);
     return () => {
       unregister(effectiveWindowId);
     };
-  }, [isManaged, effectiveWindowId, register, unregister, title, icon]);
+  }, [isManaged, effectiveWindowId, register, unregister]);
+
+  // タスクバー表示用のタイトル / アイコンは、登録済みエントリを壊さずに都度更新する
+  useEffect(() => {
+    if (!isManaged || !effectiveWindowId || !register) return;
+    register(effectiveWindowId, { title, icon });
+  }, [isManaged, effectiveWindowId, register, title, icon]);
 
   // Managed mode: get z-index and active state from context
   const managedZIndex = isManaged && effectiveWindowId && context ? (context.windows[effectiveWindowId]?.zIndex ?? 1) : undefined;

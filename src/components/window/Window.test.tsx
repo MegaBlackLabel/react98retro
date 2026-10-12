@@ -810,6 +810,26 @@ describe('Window', () => {
       expect(context.maximize).toHaveBeenCalledWith('win-1');
     });
 
+    it('updates the taskbar title without unregistering when the title changes', () => {
+      const context = createMockContext();
+      const { rerender } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="マイ コンピュータ" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      expect(context.register).toHaveBeenLastCalledWith('win-1', { title: 'マイ コンピュータ', icon: undefined });
+
+      rerender(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Program Files" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+
+      // 動的タイトル (フォルダ移動など) で unregister/register を繰り返さないこと
+      expect(context.unregister).not.toHaveBeenCalled();
+      expect(context.register).toHaveBeenLastCalledWith('win-1', { title: 'Program Files', icon: undefined });
+    });
+
     it('managed window unregisters on unmount', () => {
       const context = createMockContext();
       const { unmount } = render(
