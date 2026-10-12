@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-10-13
+
+### Added
+
+- `Taskbar` component: 28px band with the 3D top edge, 54x22 start button (grows for the Japanese label), task buttons in window-open order, and a sunken tray with an `HH:MM` clock that updates every minute. Exporting it publicly lets apps mount `<Taskbar />` inside `Win98Provider` and it derives its items from the window manager.
+- `useWindowManager.register(id, { title, icon })` keeps display info for the taskbar, and in-place updates preserve z-order, `activeWindowId`, and minimized/maximized state.
+- `Window` supports the Win98 interactions: title-bar double-click toggles maximize, minimize collapses the window into the taskbar, and maximized windows fill the work area (`--win98-work-area-bottom`).
+- `MenuBar` opens menus with `Alt` + accelerator letter (focusing the first item); `Alt` alone focuses the menu bar.
+- `report/20260413/report.md`: a measured comparison against real Windows 98 SE screenshots (method, sources, and unimplemented items).
+
+### Changed
+
+- Japanese UI text now uses the Windows 98 Japanese UI font: `MS UI Gothic` (falling back to `MS PGothic` → `Pixelated MS Sans Serif` → `DotGothic16`). `MS UI Gothic` renders from its 12px bitmap with no antialiasing, so glyphs are crisp instead of blurred (measured antialiasing on menu text: 40% → 6.6%, taskbar labels 45.5% → 0%).
+- UI font size is 12px (MS UI Gothic 9pt, the Japanese Windows 98 metric) instead of the English 11px.
+- Dimensions aligned to measured Windows 98 SE values: toolbar band 26→24px (buttons 24x24→22x22, separator 18→16px), menu bar 22px / items 20px, status bar 20px, address combo 20→21px. Height-sensitive surfaces are pinned so font metrics cannot shift them.
+- The start button uses 54px as a minimum width so the Japanese label never wraps.
+
+### Fixed
+
+- Start button label no longer wraps to two lines.
+- Text inside windows no longer renders partially blurred (the English pixel font always antialiased in Chromium).
+- Dynamic window titles (e.g. navigating folders) no longer re-register the window and reset its z-order/minimized/active state.
+
 ## [0.2.5] - 2026-10-13
 
 ### Changed
