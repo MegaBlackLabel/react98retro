@@ -24,7 +24,7 @@
 .label {
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  font-family: 'MS UI Gothic', 'MS PGothic', 'Pixelated MS Sans Serif', 'DotGothic16', Arial, sans-serif;
   white-space: nowrap;
   flex-shrink: 0;
   color: #000000;
@@ -36,6 +36,6 @@
   height: 21px;
   min-width: 0;
   font-size: 12px;
-  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  font-family: 'MS UI Gothic', 'MS PGothic', 'Pixelated MS Sans Serif', 'DotGothic16', Arial, sans-serif;
   box-sizing: border-box;
 }
