@@ -759,7 +759,55 @@ describe('Window', () => {
           <Window title="Test" windowId="win-1" />
         </WindowManagerContext.Provider>
       );
-      expect(context.register).toHaveBeenCalledWith('win-1');
+      expect(context.register).toHaveBeenCalledWith('win-1', { title: 'Test', icon: undefined });
+    });
+
+    it('managed window registers its title and icon (タスクバー表示用)', () => {
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="マイ コンピュータ" icon="/icons/pc.svg" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      expect(context.register).toHaveBeenCalledWith('win-1', { title: 'マイ コンピュータ', icon: '/icons/pc.svg' });
+    });
+
+    it('managed minimize goes through the window manager', () => {
+      const context = createMockContext();
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Minimize' }));
+      expect(context.minimize).toHaveBeenCalledWith('win-1');
+    });
+
+    it('renders nothing when the window manager reports the window minimized', () => {
+      const context = createMockContext({
+        windows: { 'win-1': { id: 'win-1', minimized: true, maximized: false, isSnapped: false, zIndex: 3 } },
+      });
+      const { container } = render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      expect(container.querySelector('.window')).toBeNull();
+    });
+
+    it('double-clicking the title bar toggles maximize through the manager', () => {
+      const context = createMockContext({
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: false, isSnapped: false, zIndex: 1 } },
+      });
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+
+      fireEvent.doubleClick(titleBar);
+      expect(context.maximize).toHaveBeenCalledWith('win-1');
     });
 
     it('managed window unregisters on unmount', () => {

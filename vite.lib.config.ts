@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 import prefixSelector from 'postcss-prefix-selector';
 import { normalizeNotFeatures } from './build/postcss-normalize-not-features.ts';
+import { jpFontFallback } from './build/postcss-jp-font-fallback.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,6 +32,7 @@ export default defineConfig({
           },
         }),
         normalizeNotFeatures(),
+        jpFontFallback(),
       ],
     },
   },

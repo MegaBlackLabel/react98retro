@@ -35,6 +35,12 @@ function getNavigableIndices(items: MenuItemDef[]): number[] {
   }, []);
 }
 
+/** "ファイル(F)" からアクセラレータ文字 (F) を取り出す。無ければ null */
+function acceleratorOf(label: string): string | null {
+  const match = label.match(/^(.*)\(([A-Za-z])\)(.*)$/);
+  return match ? match[2] : null;
+}
+
 /** "ファイル(F)" → ファイル(<u>F</u>) のようにアクセスキーを下線表示 */
 function renderLabel(label: string): ReactNode {
   const match = label.match(/^(.*)\(([A-Za-z])\)(.*)$/);
@@ -145,6 +151,28 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Alt 単独: メニューバーへフォーカスを移す
+    if (e.key === 'Alt') {
+      e.preventDefault();
+      containerRef.current?.focus();
+      return;
+    }
+
+    // Alt + 英字: アクセラレータが一致するメニューを開き、先頭項目へフォーカスする
+    if (e.altKey && /^[a-zA-Z]$/.test(e.key)) {
+      e.preventDefault();
+      const target = e.key.toLowerCase();
+      const menuIndex = menus.findIndex((menu) => {
+        const accel = acceleratorOf(menu.label);
+        return accel !== null && accel.toLowerCase() === target;
+      });
+      if (menuIndex === -1) return;
+      setOpenMenuIndex(menuIndex);
+      setOpenSubmenuIndex(null);
+      setFocusedItemIndex(getNavigableIndices(menus[menuIndex].items)[0] ?? null);
+      return;
+    }
+
     if (openMenuIndex === null) return;
     const menu = menus[openMenuIndex];
     const navigable = getNavigableIndices(menu.items);

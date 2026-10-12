@@ -7,6 +7,15 @@ export interface WindowState {
   maximized: boolean;
   isSnapped: boolean;
   zIndex: number;
+  /** タスクバー表示用 (register で渡す) */
+  title?: string;
+  icon?: string;
+}
+
+/** register 時に渡す表示情報 */
+export interface WindowRegistration {
+  title?: string;
+  icon?: string;
 }
 
 export type WindowGeometry = Rect;
@@ -31,7 +40,7 @@ export interface UseWindowManagerResult {
   maximize: (id: string) => void;
   restore: (id: string) => void;
   close: (id: string) => void;
-  register: (id: string) => void;
+  register: (id: string, info?: WindowRegistration) => void;
   unregister: (id: string) => void;
   isActive: (id: string) => boolean;
   updateGeometry: (id: string, geometry: WindowGeometry) => void;
@@ -123,12 +132,28 @@ export function useWindowManager(windowIds: string[] = [], autoMoveOnSnap = fals
     setActiveWindowId((prev) => (prev === id ? null : prev));
   }, []);
 
-  const register = useCallback((id: string) => {
+  const register = useCallback((id: string, info?: WindowRegistration) => {
     setWindows((prev) => {
-      if (prev[id]) return prev;
+      if (prev[id]) {
+        // 表示情報だけ更新する (登録済みウィンドウの再マウント時)
+        const current = prev[id];
+        if (current.title === info?.title && current.icon === info?.icon) return prev;
+        return { ...prev, [id]: { ...current, title: info?.title ?? current.title, icon: info?.icon ?? current.icon } };
+      }
 
       const maxZ = getMaxZIndex(prev);
-      const next = { ...prev, [id]: { id, minimized: false, maximized: false, isSnapped: false, zIndex: maxZ + 1 } };
+      const next = {
+        ...prev,
+        [id]: {
+          id,
+          minimized: false,
+          maximized: false,
+          isSnapped: false,
+          zIndex: maxZ + 1,
+          title: info?.title,
+          icon: info?.icon,
+        },
+      };
 
       const currentActive = activeWindowIdRef.current;
       if (currentActive && currentActive !== id && next[currentActive]) {

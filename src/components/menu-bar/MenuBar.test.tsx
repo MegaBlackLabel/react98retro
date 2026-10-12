@@ -751,3 +751,82 @@ describe('MenuBar keyboard navigation', () => {
     expect(screen.queryByText('doc.txt')).not.toBeInTheDocument();
   });
 });
+
+describe('MenuBar Alt accelerator keys', () => {
+  it('opens the matching menu and focuses its first item with Alt+letter', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'f', altKey: true });
+
+    expect(screen.getByText('開く')).toBeInTheDocument();
+    const first = screen.getByText('開く').closest('[role="menuitem"]') as HTMLElement;
+    expect(first.className).toContain('menuItemFocused');
+  });
+
+  it('treats the accelerator letter case-insensitively', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'F', altKey: true });
+
+    expect(screen.getByText('開く')).toBeInTheDocument();
+  });
+
+  it('switches to another menu with Alt+letter while one is already open', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'f', altKey: true });
+    expect(screen.getByText('開く')).toBeInTheDocument();
+
+    fireEvent.keyDown(menubar, { key: 'e', altKey: true });
+
+    expect(screen.queryByText('開く')).not.toBeInTheDocument();
+    expect(screen.getByText('切り取り')).toBeInTheDocument();
+    const first = screen.getByText('切り取り').closest('[role="menuitem"]') as HTMLElement;
+    expect(first.className).toContain('menuItemFocused');
+  });
+
+  it('does nothing when no menu matches the accelerator', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'x', altKey: true });
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('keeps the currently open menu when the accelerator does not match', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'f', altKey: true });
+    expect(screen.getByText('開く')).toBeInTheDocument();
+
+    fireEvent.keyDown(menubar, { key: 'x', altKey: true });
+
+    expect(screen.getByText('開く')).toBeInTheDocument();
+  });
+
+  it('focuses the menubar on a lone Alt keydown', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'Alt', altKey: true });
+
+    expect(document.activeElement).toBe(menubar);
+  });
+
+  it('does not close an open menu on Alt keyup', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const menubar = screen.getByRole('menubar');
+
+    fireEvent.keyDown(menubar, { key: 'f', altKey: true });
+    expect(screen.getByText('開く')).toBeInTheDocument();
+
+    fireEvent.keyUp(menubar, { key: 'Alt' });
+
+    expect(screen.getByText('開く')).toBeInTheDocument();
+  });
+});

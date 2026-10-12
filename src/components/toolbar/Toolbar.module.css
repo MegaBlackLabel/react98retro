@@ -26,8 +26,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px !important;
-  height: 24px !important;
+  /* Win98 の標準ツールバー: 16x16 アイコン + 3px 余白 = 22x22 ボタン
+     (実機 Win98SE スクリーンショットのツールバー行 20〜22px に合わせる) */
+  width: 22px !important;
+  height: 22px !important;
   min-width: 0 !important;
   min-height: 0 !important;
   padding: 0 !important;
@@ -74,7 +76,8 @@
 
 .separator {
   width: 0;
-  height: 18px;
+  /* ボタン (22px) に合わせて上下 3px 内側まで */
+  height: 16px;
   border-left: 1px solid #808080;
   border-right: 1px solid #ffffff;
   margin: 0 3px;

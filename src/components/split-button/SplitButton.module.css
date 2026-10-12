@@ -10,9 +10,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  /* ツールバーと同じ 22x22 (16px アイコン + 3px 余白) */
+  width: 22px;
+  height: 22px;
   min-width: 0;
+  /* 98.css の button min-height:23px を打ち消す */
+  min-height: 0;
   padding: 0;
   cursor: default;
   position: relative;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FileExplorer } from './features/file-explorer/FileExplorer';
-import { Win98Provider } from './components/Win98Provider';
+import { Taskbar, Win98Provider } from './components';
 import { useMobile } from './hooks/useMobile';
 
 interface ExplorerConfig {
@@ -62,6 +62,11 @@ function App() {
           />
         ) : null
       )}
+      {/* Win98 のタスクバー: 常に最前面、ウィンドウは作業領域 (上の 28px) まで最大化する */}
+      <Taskbar
+        style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 100000 }}
+        onStartClick={() => {}}
+      />
     </Win98Provider>
   );
 }

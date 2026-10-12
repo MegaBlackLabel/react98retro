@@ -31,3 +31,9 @@
 .win98 .status-bar {
   will-change: transform;
 }
+
+/* 実機のステータスバー (19〜20px) に合わせて固定する (フォント差でぶれないように) */
+.win98 .status-bar-field {
+  height: 20px;
+  box-sizing: border-box;
+}

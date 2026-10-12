@@ -1,0 +1,109 @@
+.taskbar {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  box-sizing: border-box;
+  background: #c0c0c0;
+  /* 上辺のみ 2px の 3D 境界 (#dfdfdf -> #ffffff) */
+  box-shadow: inset 0 1px 0 #dfdfdf, inset 0 2px 0 #ffffff;
+  font-size: 11px;
+  color: #000;
+  user-select: none;
+}
+
+/* スタートボタン: 浮き出し 3D */
+.taskbar .start {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 54px;
+  height: 22px;
+  /* 98.css の button (min-width:75px / min-height:23px) を打ち消す */
+  min-width: 0;
+  min-height: 0;
+  margin-left: 2px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border: none;
+  background: #c0c0c0;
+  font-size: 11px;
+  color: #000;
+  cursor: default;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset 2px 2px 0 #dfdfdf,
+    inset -1px -1px 0 #000000,
+    inset -2px -2px 0 #808080;
+}
+
+.taskbar .start:active {
+  box-shadow:
+    inset 1px 1px 0 #000000,
+    inset 2px 2px 0 #808080,
+    inset -1px -1px 0 #ffffff,
+    inset -2px -2px 0 #dfdfdf;
+}
+
+/* タスクボタン: 非アクティブは浮き出し */
+.taskbar .taskButton {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  min-height: 0;
+  min-width: 140px;
+  max-width: 160px;
+  margin-left: 3px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border: none;
+  background: #c0c0c0;
+  font-size: 11px;
+  color: #000;
+  cursor: default;
+  overflow: hidden;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset 2px 2px 0 #dfdfdf,
+    inset -1px -1px 0 #000000,
+    inset -2px -2px 0 #808080;
+}
+
+/* アクティブ (最前面) は沈み 3D */
+.taskbar .taskButtonActive {
+  box-shadow:
+    inset 1px 1px 0 #000000,
+    inset 2px 2px 0 #808080,
+    inset -1px -1px 0 #ffffff,
+    inset -2px -2px 0 #dfdfdf;
+}
+
+.taskButtonLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* トレイ: 沈み 3D */
+.tray {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 60px;
+  margin-left: auto;
+  margin-right: 2px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+}
+
+.clock {
+  font-size: 11px;
+  text-align: center;
+  color: #000;
+}

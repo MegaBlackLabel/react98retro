@@ -60,3 +60,6 @@ export type { SplitButtonProps } from './split-button';
 
 export { TableView } from './table-view';
 export type { TableColumn, TableViewProps, TableSortState, TableSortDirection } from './table-view';
+
+export { Taskbar } from './taskbar';
+export type { TaskbarProps, TaskbarItem } from './taskbar';
