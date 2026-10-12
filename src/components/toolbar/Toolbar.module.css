@@ -93,7 +93,7 @@
   background: #ffffe1;
   border: 1px solid #000000;
   padding: 1px 4px;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
   z-index: 9999;
@@ -104,7 +104,7 @@
   display: flex;
   align-items: center;
   padding: 3px 16px;
-  font-size: 11px;
+  font-size: 12px;
   font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
   cursor: default;
   user-select: none;

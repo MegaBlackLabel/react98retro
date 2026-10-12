@@ -6,7 +6,7 @@
   background: #c0c0c0;
   /* 上辺のみ 2px の 3D 境界 (#dfdfdf -> #ffffff) */
   box-shadow: inset 0 1px 0 #dfdfdf, inset 0 2px 0 #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   color: #000;
   user-select: none;
 }
@@ -16,17 +16,21 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  width: 54px;
+  /* 実機 (英語版) は 54x22。日本語の「スタート」が入る幅まで伸ばすので
+     54px は最小幅として扱い、折り返さない */
+  width: auto;
+  min-width: 54px;
   height: 22px;
+  white-space: nowrap;
   /* 98.css の button (min-width:75px / min-height:23px) を打ち消す */
-  min-width: 0;
   min-height: 0;
   margin-left: 2px;
-  padding: 0 2px;
+  padding: 0 4px;
   box-sizing: border-box;
   border: none;
   background: #c0c0c0;
-  font-size: 11px;
+  /* Windows 98 日本語版の UI フォントサイズ (MS UI Gothic 9pt = 12px) */
+  font-size: 12px;
   color: #000;
   cursor: default;
   box-shadow:
@@ -34,6 +38,10 @@
     inset 2px 2px 0 #dfdfdf,
     inset -1px -1px 0 #000000,
     inset -2px -2px 0 #808080;
+}
+
+.taskbar .start span {
+  white-space: nowrap;
 }
 
 .taskbar .start:active {
@@ -58,7 +66,8 @@
   box-sizing: border-box;
   border: none;
   background: #c0c0c0;
-  font-size: 11px;
+  /* 日本語版 Win98 の UI フォントサイズ */
+  font-size: 12px;
   color: #000;
   cursor: default;
   overflow: hidden;
@@ -103,7 +112,7 @@
 }
 
 .clock {
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
   color: #000;
 }

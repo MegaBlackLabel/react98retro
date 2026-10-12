@@ -22,7 +22,7 @@
 }
 
 .label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
   white-space: nowrap;
@@ -35,7 +35,7 @@
   /* 98.css の input/select と同じ 21px に揃える (実機のアドレス コンボ実測は 22px) */
   height: 21px;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
   box-sizing: border-box;
 }
