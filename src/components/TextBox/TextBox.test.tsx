@@ -11,6 +11,19 @@ describe('TextBox', () => {
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
   });
 
+  it('renders an unlabelled input addressed by aria-label', () => {
+    render(<TextBox aria-label="検索" placeholder="search" />);
+
+    expect(screen.getByRole('textbox', { name: '検索' })).toHaveAttribute('placeholder', 'search');
+  });
+
+  it('does not render a label element when label is omitted', () => {
+    const { container } = render(<TextBox />);
+
+    expect(container.querySelector('label')).toBeNull();
+    expect(container.querySelector('input')).toHaveAttribute('type', 'text');
+  });
+
   it('applies stacked layout when requested', () => {
     const { container } = render(<TextBox id="t2" label="Name" stacked />);
 

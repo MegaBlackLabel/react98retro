@@ -64,6 +64,35 @@ describe('Window', () => {
     expect(onPointerDown).toHaveBeenCalledOnce();
   });
 
+  it('adds dialog semantics, focus, and a backdrop when modal', () => {
+    render(<Window title="Confirm" modal />);
+    const dialog = screen.getByRole('dialog');
+
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAccessibleName('Confirm');
+    expect(dialog).toHaveFocus();
+    expect(dialog.querySelector('[data-window-modal-backdrop]')).not.toBeNull();
+  });
+
+  it('keeps an explicit role on a modal window', () => {
+    render(<Window title="Confirm" modal role="alertdialog" aria-label="Danger" />);
+    expect(screen.getByRole('alertdialog')).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleName('Danger');
+  });
+
+  it('calls onClose when Escape is pressed on a modal window', () => {
+    const onClose = vi.fn();
+    render(<Window title="Confirm" modal onClose={onClose} />);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('does not add dialog semantics when not modal', () => {
+    render(<Window title="Plain" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('[data-window-modal-backdrop]')).toBeNull();
+  });
+
   it('raises the active window z-index when dragging starts', () => {
     const { container } = render(<Window title="Test" zIndex={99} />);
     const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;

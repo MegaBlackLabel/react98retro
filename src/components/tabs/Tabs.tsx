@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import clsx from 'clsx';
+import styles from './Tabs.module.css';
 
 export type TabItem = {
   id: string;
@@ -20,6 +21,10 @@ export type TabsProps = {
   defaultActiveTab?: string;
   onTabChange?: (id: string) => void;
   multirows?: boolean;
+  /** 親の高さに追従させる (root を flex column にする) */
+  fill?: boolean;
+  /** タブパネル (.window) に足すクラス */
+  panelClassName?: string;
 } & ComponentPropsWithoutRef<'div'>;
 
 export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
@@ -30,6 +35,8 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
       defaultActiveTab,
       onTabChange,
       multirows = false,
+      fill = false,
+      panelClassName,
       className,
       ...props
     },
@@ -92,7 +99,7 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
     };
 
     return (
-      <div ref={ref} className={className} {...props}>
+      <div ref={ref} className={clsx(fill && styles.fill, className)} {...props}>
         <menu role="tablist" className={clsx({ multirows })} onKeyDown={handleKeyDown}>
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -117,8 +124,8 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
             );
           })}
         </menu>
-        <div className="window" role="tabpanel">
-          <div className="window-body">{activeTabItem?.content}</div>
+        <div className={clsx('window', styles.panel, panelClassName)} role="tabpanel">
+          <div className={clsx('window-body', styles.body)}>{activeTabItem?.content}</div>
         </div>
       </div>
     );

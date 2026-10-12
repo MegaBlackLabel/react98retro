@@ -27,6 +27,8 @@ export interface WindowProps
   inactive?: boolean;
   minimized?: boolean;
   maximized?: boolean;
+  /** モーダルダイアログとして扱う (role="dialog"/aria-modal、背景ブロック、Escape で onClose) */
+  modal?: boolean;
   onMinimize?: () => void;
   onMaximize?: () => void;
   onRestore?: () => void;
@@ -79,6 +81,7 @@ export function Window({
   inactive,
   minimized: minimizedProp,
   maximized: maximizedProp,
+  modal = false,
   onMinimize,
   onMaximize,
   onRestore,
@@ -103,6 +106,7 @@ export function Window({
   const snapEnabled = snapEnabledProp ?? !isMobile;
 
   const titleBarRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
   const [activeZIndex, setActiveZIndex] = useState(zIndex ?? 1);
@@ -377,13 +381,38 @@ export function Window({
     context.focus(effectiveWindowId);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    rest.onKeyDown?.(e);
+    if (!modal || e.key !== 'Escape') return;
+    onClose?.();
+  };
+
+  // モーダルは開いた時点で自分にフォーカスを移す（Escape とスクリーンリーダー用）
+  useEffect(() => {
+    if (!modal) return;
+    rootRef.current?.focus();
+  }, [modal]);
+
   const windowRoot = (
     <div
       {...rest}
+      ref={rootRef}
       className={clsx('window', styles.window, className)}
       style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: effectiveZIndex }}
       onPointerDown={handlePointerDown}
+      onKeyDown={handleKeyDown}
+      role={rest.role ?? (modal ? 'dialog' : undefined)}
+      aria-modal={rest['aria-modal'] ?? (modal || undefined)}
+      aria-label={rest['aria-label'] ?? (modal ? title : undefined)}
+      tabIndex={rest.tabIndex ?? (modal ? -1 : undefined)}
     >
+      {modal && (
+        <div
+          data-window-modal-backdrop=""
+          aria-hidden="true"
+          style={{ position: 'fixed', inset: 0, zIndex: -1 }}
+        />
+      )}
       <TitleBar
         ref={titleBarRef}
         title={title}

@@ -17,6 +17,8 @@ export type MenuItemDef =
   | { type: 'submenu'; label: string; disabled?: boolean; items: MenuItemDef[] };
 
 export type MenuBarMenu = {
+  /** テスト用の安定 ID (`data-menu-id` に出力)。省略時は label を使う */
+  id?: string;
   label: string;
   items: MenuItemDef[];
 };
@@ -283,6 +285,7 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
           ref={(el) => {
             triggerRefs.current[menuIndex] = el;
           }}
+          data-menu-id={menu.id ?? menu.label}
           className={clsx(styles.menuBarItem, {
             [styles.menuBarItemActive]: openMenuIndex === menuIndex,
           })}

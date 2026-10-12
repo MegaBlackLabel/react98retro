@@ -32,6 +32,69 @@ describe('TableView', () => {
     expect(screen.getByText('Size')).toBeInTheDocument();
   });
 
+  it('accepts numeric row ids and normalizes them to strings', () => {
+    type NumericRow = { id: number; name: string };
+    const numericColumns: readonly TableColumn<NumericRow>[] = [{ key: 'name', header: 'Name' }];
+    const onSelectionChange = vi.fn();
+
+    render(
+      <TableView
+        columns={numericColumns}
+        rows={[
+          { id: 1, name: 'one' },
+          { id: 2, name: 'two' },
+        ]}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('one'));
+
+    expect(screen.getByText('one').closest('tr')?.className).toContain('highlighted');
+    expect(onSelectionChange).toHaveBeenCalledWith(['1']);
+  });
+
+  it('highlights a row whose numeric id is selected through selectedIds', () => {
+    type NumericRow = { id: number; name: string };
+    const numericColumns: readonly TableColumn<NumericRow>[] = [{ key: 'name', header: 'Name' }];
+
+    render(
+      <TableView
+        columns={numericColumns}
+        rows={[
+          { id: 7, name: 'seven' },
+          { id: 8, name: 'eight' },
+        ]}
+        selectedIds={[7]}
+      />,
+    );
+
+    expect(screen.getByText('seven').closest('tr')?.className).toContain('highlighted');
+    expect(screen.getByText('eight').closest('tr')?.className).not.toContain('highlighted');
+  });
+
+  it('toggles a numeric id with ctrl+click', () => {
+    type NumericRow = { id: number; name: string };
+    const numericColumns: readonly TableColumn<NumericRow>[] = [{ key: 'name', header: 'Name' }];
+    const onSelectionChange = vi.fn();
+
+    render(
+      <TableView
+        columns={numericColumns}
+        rows={[
+          { id: 1, name: 'one' },
+          { id: 2, name: 'two' },
+        ]}
+        selectedIds={[1]}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('two'), { ctrlKey: true });
+
+    expect(onSelectionChange).toHaveBeenCalledWith(['1', '2']);
+  });
+
   it('renders all rows', () => {
     render(<TableView columns={columns} rows={rows} />);
 

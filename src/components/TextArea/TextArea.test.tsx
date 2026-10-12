@@ -11,6 +11,13 @@ describe('TextArea', () => {
     expect(screen.getByLabelText('Notes')).toBeInTheDocument();
   });
 
+  it('renders an unlabelled textarea addressed by aria-label', () => {
+    const { container } = render(<TextArea aria-label="メモ" rows={4} />);
+
+    expect(screen.getByRole('textbox', { name: 'メモ' })).toHaveAttribute('rows', '4');
+    expect(container.querySelector('label')).toBeNull();
+  });
+
   it('applies stacked layout by default', () => {
     const { container } = render(<TextArea id="ta2" label="Notes" />);
 

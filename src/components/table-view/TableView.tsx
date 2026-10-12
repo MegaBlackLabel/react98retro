@@ -28,10 +28,13 @@ export type TableColumn<T> = {
   render?: (value: T[keyof T], row: T) => ReactNode;
 };
 
-export type TableViewProps<T extends { id: string }> = {
+export type TableRowId = string | number;
+
+export type TableViewProps<T extends { id: TableRowId }> = {
   columns: readonly TableColumn<T>[];
   rows: readonly T[];
-  selectedIds?: readonly string[];
+  /** 数値 id も受け付け、内部では文字列に正規化する */
+  selectedIds?: readonly TableRowId[];
   onSelectionChange?: (ids: string[]) => void;
   onRowDoubleClick?: (row: T) => void;
   sort?: TableSortState<T>;
@@ -40,7 +43,7 @@ export type TableViewProps<T extends { id: string }> = {
   height?: number | string;
 } & ComponentPropsWithoutRef<'div'>;
 
-function TableViewInner<T extends { id: string }>(
+function TableViewInner<T extends { id: TableRowId }>(
   {
     columns,
     rows,
@@ -64,25 +67,30 @@ function TableViewInner<T extends { id: string }>(
   );
 
   const currentSelectedIds = selectedIds ?? internalSelectedIds;
-  const selectedSet = useMemo(() => new Set(currentSelectedIds), [currentSelectedIds]);
+  const selectedSet = useMemo(
+    () => new Set(currentSelectedIds.map((id) => String(id))),
+    [currentSelectedIds],
+  );
   const isControlled = selectedIds != null;
   const hasSortUi = onSortChange != null;
 
-  const commitSelection = (ids: string[]) => {
-    if (!isControlled) setInternalSelectedIds(ids);
-    onSelectionChange?.(ids);
+  const commitSelection = (ids: readonly TableRowId[]) => {
+    const normalized = ids.map((id) => String(id));
+    if (!isControlled) setInternalSelectedIds(normalized);
+    onSelectionChange?.(normalized);
   };
 
   const handleRowClick = (row: T, event: MouseEvent<HTMLTableRowElement>) => {
+    const rowId = String(row.id);
     const isMultiSelect = event.ctrlKey || event.metaKey;
     if (isMultiSelect) {
-      const nextIds = selectedSet.has(row.id)
-        ? currentSelectedIds.filter((id) => id !== row.id)
-        : [...currentSelectedIds, row.id];
+      const nextIds = selectedSet.has(rowId)
+        ? currentSelectedIds.filter((id) => String(id) !== rowId)
+        : [...currentSelectedIds, rowId];
       commitSelection(nextIds);
       return;
     }
-    commitSelection([row.id]);
+    commitSelection([rowId]);
   };
 
   const dragState = useRef<{ colIndex: number; startX: number; startWidth: number } | null>(null);
@@ -178,7 +186,7 @@ function TableViewInner<T extends { id: string }>(
         </thead>
         <tbody>
           {rows.map((row) => {
-            const isSelected = selectedSet.has(row.id);
+            const isSelected = selectedSet.has(String(row.id));
             return (
               <tr
                 key={row.id}
@@ -203,7 +211,7 @@ function TableViewInner<T extends { id: string }>(
   );
 }
 
-export const TableView = forwardRef(TableViewInner) as <T extends { id: string }>(
+export const TableView = forwardRef(TableViewInner) as <T extends { id: TableRowId }>(
   props: TableViewProps<T> & RefAttributes<HTMLDivElement>,
 ) => ReactElement;
 
