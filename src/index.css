@@ -12,7 +12,7 @@ html, body, #root {
 }
 
 body {
-  font-family: 'DotGothic16', 'MS UI Gothic', 'MS PGothic', sans-serif;
+  font-family: 'MS UI Gothic', 'MS PGothic', 'DotGothic16', sans-serif;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

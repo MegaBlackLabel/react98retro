@@ -21,6 +21,9 @@
  */
 .win98 {
   color: #000000;
+  /* 日本語版 Win98 の UI フォント (12px のビットマップでアンチエイリアスが乗らない)。
+     font-family を個別指定していない要素 (タスクバーなど) はここから継承する。 */
+  font-family: 'MS UI Gothic', 'MS PGothic', 'Pixelated MS Sans Serif', 'DotGothic16', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: auto;
