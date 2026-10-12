@@ -14,15 +14,18 @@ React で Windows 98 のコンポーネントを実装しました。
 
 ## 実装コンポーネント
 
-- **Window** — タイトルバー付き、ドラッグ移動・リサイズ対応ウィンドウ（`data-testid` などの任意 DOM props をそのまま転送）
-- **MenuBar** — プルダウンメニュー付きメニューバー（ドロップダウンはポータル層 `document.body` に描画されるので他ウィンドウの下に隠れない）
+- **Window** — タイトルバー付き、ドラッグ移動・リサイズ対応ウィンドウ（`data-testid` などの任意 DOM props をそのまま転送。`modal` でダイアログ化）
+- **MenuBar** — プルダウンメニュー付きメニューバー（ドロップダウンはポータル層 `document.body` に描画されるので他ウィンドウの下に隠れない。トップレベル項目に `data-menu-id` を出力）
 - **Toolbar** — アイコン＋ラベル付きツールバー（SplitButton 対応）
 - **AddressBar** — アドレスバー（ドロップダウン履歴付き）
 - **TreeView** — フォルダツリー
-- **TableView** — 列リサイズ対応ファイル一覧テーブル
+- **TableView** — 列リサイズ対応ファイル一覧テーブル（行 `id` は `string | number`。内部で文字列に正規化してハイライト判定する）
+- **Tabs** — タブ。`fill` で親の高さに追従、`panelClassName` でパネルへクラス追加
 - **SplitButton** — アイコン＋▼ボタン＋メニューの複合ボタン
 - **Menu** — ネスト対応コンテキストメニュー
 - **Button / CheckBox / Radio / TextBox / TextArea / GroupBox** など、98.css の全 UI コンポーネント
+  - `Checkbox` / `OptionButton` / `TextBox` / `TextArea` の `label` は任意。省略すると `label` 要素を描画しないので、
+    `<TextBox aria-label="検索" />` のようにアクセシブルネームだけ付けて素の入力として使える（`id` も省略可）
 
 ## 技術スタック
 
@@ -120,8 +123,31 @@ export default defineConfig({
 `dedupe` が無いと `resolve.alias` などで `dist` を直接参照したときに React が 2 つ読み込まれ、
 `useRef` などが `null is not an object` で落ちます。
 
-CSS minify は既定で問題ありません。ビルド済み `style.css` は lightningcss で解析できる形に
-正規化済みです（98.css の `@media (not(hover))` を `@media not (hover)` に変換して同梱）。
+CSS minify は既定のままで問題ありません（consumer 側で `build.cssMinify` を変更する必要はありません）。
+ビルド済み `style.css` は lightningcss で解析できる形に正規化済みです（98.css の
+`@media (not(hover))` を `@media not (hover)` に変換して同梱）。
+
+### 5. 重なり順とモーダル
+
+`Window` は root に inline の `z-index` を持ち、クリックで前面化します。重なり順は
+**`zIndex` prop で制御**してください。
+
+```tsx
+<Window title="起動確認" zIndex={100} modal onClose={close}>…</Window>
+```
+
+`[data-testid='main-window'] { position: relative; z-index: 10 }` のように **wrapper へ CSS の
+`z-index` を当てないでください**。wrapper がスタッキングコンテキストを作り、後から描画した
+ダイアログが背面に回ってクリックできなくなります。
+
+モーダルとして使う場合は `modal` を付けます。
+
+- `role="dialog"` / `aria-modal="true"` / `aria-label={title}`（`role` / `aria-label` を渡せば上書きされます）
+- 背景を覆う透明バックドロップを描画し、背後のクリックをブロック
+- マウント時に自分へフォーカスを移し、`Escape` で `onClose` を呼ぶ
+
+アクセシビリティ属性だけが必要なら、`Window` は任意の DOM props を転送するので
+`role="dialog" aria-modal="true"` を直接渡すこともできます。
 
 ## ローカルの作業ツリーを消費側で使う
 

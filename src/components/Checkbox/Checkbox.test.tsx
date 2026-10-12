@@ -11,6 +11,20 @@ describe('Checkbox', () => {
     expect(screen.getByLabelText('Check me')).toBeInTheDocument();
   });
 
+  it('renders an unlabelled checkbox addressed by aria-label', () => {
+    render(<Checkbox aria-label="同意する" data-testid="bare-checkbox" />);
+
+    expect(screen.getByRole('checkbox', { name: '同意する' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')?.closest('.field-row')?.querySelector('label')).toBeNull();
+  });
+
+  it('does not render a label element when label is omitted', () => {
+    const { container } = render(<Checkbox id="cb-nolabel" />);
+
+    expect(container.querySelector('label')).toBeNull();
+    expect(container.querySelector('input')).toHaveAttribute('id', 'cb-nolabel');
+  });
+
   it('associates label with id', () => {
     render(<Checkbox id="cb2" label="Associated" />);
 

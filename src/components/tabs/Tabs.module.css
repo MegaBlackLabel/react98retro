@@ -1,0 +1,23 @@
+/**
+ * `fill` を付けたときだけ、タブパネルが親の高さに追従する。
+ * 98.css の .window / .window-body は高さを持たないので、ここで flex を張る。
+ */
+.fill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.fill .panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fill .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}

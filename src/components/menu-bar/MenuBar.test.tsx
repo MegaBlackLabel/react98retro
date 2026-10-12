@@ -462,6 +462,20 @@ describe('MenuBar submenu hover lifecycle', () => {
     expect(Number(menu.style.zIndex)).toBeGreaterThan(1000);
   });
 
+  it('exposes a stable hook on top-level items for tests', () => {
+    render(
+      <MenuBar
+        menus={[
+          { id: 'file', label: 'ファイル(F)', items: [{ type: 'item', label: '開く' }] },
+          { label: '編集(E)', items: [{ type: 'item', label: 'コピー' }] },
+        ]}
+      />,
+    );
+
+    expect(document.querySelector('[data-menu-id="file"]')).not.toBeNull();
+    expect(document.querySelector('[data-menu-id="編集(E)"]')).not.toBeNull();
+  });
+
   it('positions the popup layer below its trigger', () => {
     render(<MenuBar menus={SAMPLE_MENUS} />);
     const trigger = screen.getByText(/ファイル/).closest('[role="menuitem"]') as HTMLElement;

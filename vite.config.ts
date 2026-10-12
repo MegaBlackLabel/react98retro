@@ -20,6 +20,8 @@ export default defineConfig({
   },
   base: '/react98retro/',
   build: {
+    // ライブラリ成果物 (dist/) を壊さないよう、デモの出力先を分ける
+    outDir: 'demo-dist',
     // 98.css の @media (not(hover)) は lightningcss minify が invalid 判定する
     cssMinify: 'esbuild',
   },

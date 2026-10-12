@@ -41,6 +41,19 @@ describe('Tabs', () => {
     expect(screen.getByRole('tablist')).toHaveClass('multirows');
   });
 
+  it('marks the root and panel as fillable when fill=true', () => {
+    const { container } = render(<Tabs tabs={tabs} fill />);
+
+    expect((container.firstChild as HTMLElement).className).toMatch(/fill/);
+    expect(screen.getByRole('tabpanel').className).toMatch(/panel/);
+  });
+
+  it('applies panelClassName to the tab panel', () => {
+    render(<Tabs tabs={tabs} panelClassName="my-panel" />);
+
+    expect(screen.getByRole('tabpanel')).toHaveClass('my-panel');
+  });
+
   it("controlled mode calls onTabChange and doesn't change internal state", async () => {
     const user = userEvent.setup();
     const onTabChange = vi.fn();

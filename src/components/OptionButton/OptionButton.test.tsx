@@ -11,6 +11,13 @@ describe('OptionButton', () => {
     expect(screen.getByLabelText('Option 1')).toBeInTheDocument();
   });
 
+  it('renders an unlabelled radio addressed by aria-label', () => {
+    const { container } = render(<OptionButton name="group" aria-label="既定" value="a" />);
+
+    expect(screen.getByRole('radio', { name: '既定' })).toBeInTheDocument();
+    expect(container.querySelector('label')).toBeNull();
+  });
+
   it('associates label with id', () => {
     render(<OptionButton id="r2" name="group" label="Option 2" />);
 

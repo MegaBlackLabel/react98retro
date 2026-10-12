@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-10-12
+
+### Added
+
+- `Window` `modal` prop: renders `role="dialog"` / `aria-modal="true"` / `aria-label={title}` (all overridable through props), draws a full-viewport backdrop that blocks interaction with the windows behind it, focuses itself on mount, and calls `onClose` on `Escape`.
+- `MenuBar` top-level items expose `data-menu-id` (explicit `MenuBarMenu.id`, falling back to the label) so tests can target them without matching the split accelerator markup.
+- `Tabs` `fill` prop (fills the parent height via flex) and `panelClassName` for styling the tab panel.
+- `TableView` accepts `string | number` row ids and normalizes them internally, so numeric ids highlight and toggle correctly instead of silently failing.
+- `Checkbox`, `OptionButton`, `TextBox`, and `TextArea` accept an omitted `label` (and `id`), rendering a bare input that can be named with `aria-label`.
+
+### Changed
+
+- The demo app now builds to `demo-dist` (GitHub Pages workflow updated) so `bun run build` no longer empties the library output in `dist`.
+- README documents consumer-side setup: `resolve.dedupe: ['react', 'react-dom']`, tarball-based local installation, the fact that no `build.cssMinify` override is needed, and how to control stacking order with `zIndex` instead of wrapper CSS.
+
 ## [0.2.3] - 2026-06-13
 
 ### Added
