@@ -59,6 +59,8 @@
   min-width: 120px;
   z-index: 10000;
   padding: 2px;
+  /* ピクセルフォントの ClearType 色フリンジ対策 (子孫に fixed が無いので安全) */
+  will-change: transform;
 }
 
 /* Menu item */

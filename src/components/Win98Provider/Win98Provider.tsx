@@ -1,5 +1,6 @@
 import type { ReactNode, CSSProperties } from 'react';
 import '98.css';
+import './win98-theme.css';
 import { useWindowManager } from '../../hooks/useWindowManager';
 import { WindowManagerContext, type WindowManagerContextValue } from '../window/WindowManagerContext';
 

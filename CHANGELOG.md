@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-10-13
+
+### Changed
+
+- Text inside `.win98` now follows the Windows Standard scheme: body text is pure black `#000000` instead of the `#222` that 98.css applies to `body`. Highlight (`#000080` / `#ffffff`), grayed (`#808080`), and desktop icon label (`#ffffff`) colors are unchanged.
+- Window surfaces (`title-bar`, `window-body`, `status-bar`) and the `MenuBar` popup layer are promoted to composited layers so pixel fonts are rasterized with grayscale antialiasing instead of Chromium's ClearType (LCD subpixel) antialiasing. The lever is applied per text surface because `will-change: transform` on `.win98` / `.window` would change the containing block of `position: fixed` descendants (window placement, modal backdrop).
+- The demo's global CSS no longer sets `text-rendering: optimizeLegibility` and requests grayscale smoothing.
+
+### Fixed
+
+- Greenish/orange edges around all pixel-font text (menu bar, window body, popup menus) on Windows Chromium: 16.8% of glyph pixels were chromatic before, 0% after.
+
+### Added
+
+- README section "文字の配色と描画": the palette table, why ClearType tinting happens (and that `-webkit-font-smoothing` / `text-rendering` are ignored by Chromium), and how to apply the same treatment to custom text surfaces rendered outside `Window`.
+
 ## [0.2.4] - 2026-10-12
 
 ### Added
