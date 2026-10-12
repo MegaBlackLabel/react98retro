@@ -1,0 +1,33 @@
+/**
+ * Windows 98 の「文字の配色」と描画の補正。
+ *
+ * ## 配色
+ * Windows Standard scheme のウィンドウ文字は黒 (#000000)。98.css は body に #222 を当てており、
+ * `.win98` 配下の本文が #222 になっていたので黒に戻す。
+ * 選択 (Highlight) の #000080 / #ffffff、無効文字の #808080、デスクトップアイコン名の #ffffff は
+ * 98.css と各コンポーネント側の定義をそのまま使う。
+ *
+ * ## 描画 (色フリンジ対策)
+ * ピクセルフォント (Pixelated MS Sans Serif / DotGothic16) を Windows の ClearType
+ * (LCD サブピクセル AA) で描くと、文字の縁が緑/橙に色づく。Chromium は -webkit-font-smoothing を
+ * 無視するため、合成レイヤーに載せてグレースケール AA に落とすのが唯一効く方法。
+ *
+ * ただし `will-change: transform` / `filter` は「子孫の position: fixed の基準」を変えるため、
+ * `.win98` や `.window` に付けると
+ *   - `.win98` に付ける: Window が provider の原点基準になり、埋め込み配置で位置がずれる
+ *   - `.window` に付ける: モーダルのバックドロップ (fixed) がウィンドウ枠内に縮む
+ * という副作用が出る。そのため「fixed の子孫を持たない文字面」にだけ付ける。
+ * (8 方向リサイズハンドルや sizeGrip は absolute なので影響なし)
+ */
+.win98 {
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: auto;
+}
+
+.win98 .title-bar,
+.win98 .window-body,
+.win98 .status-bar {
+  will-change: transform;
+}

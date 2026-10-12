@@ -149,6 +149,34 @@ CSS minify は既定のままで問題ありません（consumer 側で `build.c
 アクセシビリティ属性だけが必要なら、`Window` は任意の DOM props を転送するので
 `role="dialog" aria-modal="true"` を直接渡すこともできます。
 
+### 6. 文字の配色と描画
+
+`.win98` 配下の文字色は Windows Standard scheme に合わせています。
+
+| 用途 | 色 |
+|---|---|
+| 通常の文字 | `#000000`（98.css は `body` に `#222` を当てるので `.win98` で黒に戻しています） |
+| 選択 (Highlight) | 背景 `#000080` / 文字 `#ffffff` |
+| 無効 (Grayed) | `#808080`（+ 白の 1px シャドウ） |
+| デスクトップアイコン名 | `#ffffff`（背景は `#008080`） |
+
+ピクセルフォント (Pixelated MS Sans Serif / DotGothic16) は、Windows の ClearType
+（LCD サブピクセル AA）で描かれると **文字の縁が緑/橙に色づいて見えます**。Chromium は
+`-webkit-font-smoothing` を無視するため、このライブラリでは文字面を合成レイヤーに載せて
+グレースケール AA に固定しています（`title-bar` / `window-body` / `status-bar` とメニューの
+ポップアップ層）。
+
+`Window` の外に独自の文字面（デスクトップアイコンなど）を置く場合は、同じ方法を当てられます。
+
+```css
+/* 子孫に position: fixed が無い場合のみ。付けると fixed の基準が変わるので、
+   .win98 や .window 自体には付けないこと（ウィンドウ位置やモーダルの
+   バックドロップがずれます） */
+.my-desktop-label {
+  will-change: transform;
+}
+```
+
 ## ローカルの作業ツリーを消費側で使う
 
 `file:` / `link:` 依存は Windows でツリー全体のコピーに失敗する（`EPERM` /
