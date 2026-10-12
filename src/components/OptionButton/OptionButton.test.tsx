@@ -25,6 +25,15 @@ describe('OptionButton', () => {
     expect(screen.getByText('Option 2')).toHaveAttribute('for', 'r2');
   });
 
+  it('keeps the input immediately before the label so 98.css sibling selectors match', () => {
+    const { container } = render(<OptionButton id="r-order" name="group" label="Ordered" />);
+
+    const input = screen.getByLabelText('Ordered');
+    expect(input.tagName).toBe('INPUT');
+    expect(input.nextElementSibling?.tagName).toBe('LABEL');
+    expect(container.querySelector('input[type="radio"] + label')).not.toBeNull();
+  });
+
   it('forwards additional props', () => {
     render(
       <OptionButton

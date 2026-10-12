@@ -17,8 +17,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 
     return (
       <FieldRow stacked={stacked}>
-        {label != null && <label htmlFor={inputId}>{label}</label>}
+        {/* 98.css は input + label の隣接セレクタで描画するため input が先 */}
         <input ref={ref} type="checkbox" id={inputId} {...props} />
+        {label != null && <label htmlFor={inputId}>{label}</label>}
       </FieldRow>
     );
   },

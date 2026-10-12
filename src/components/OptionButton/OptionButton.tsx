@@ -18,8 +18,9 @@ export const OptionButton = forwardRef<HTMLInputElement, OptionButtonProps>(
 
     return (
       <FieldRow stacked={stacked}>
-        {label != null && <label htmlFor={inputId}>{label}</label>}
+        {/* 98.css は input + label の隣接セレクタで描画するため input が先 */}
         <input ref={ref} type="radio" id={inputId} name={name} {...props} />
+        {label != null && <label htmlFor={inputId}>{label}</label>}
       </FieldRow>
     );
   },

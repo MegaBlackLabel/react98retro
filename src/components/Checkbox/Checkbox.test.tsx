@@ -32,6 +32,15 @@ describe('Checkbox', () => {
     expect(screen.getByText('Associated')).toHaveAttribute('for', 'cb2');
   });
 
+  it('keeps the input immediately before the label so 98.css sibling selectors match', () => {
+    const { container } = render(<Checkbox id="cb-order" label="Ordered" />);
+
+    const input = screen.getByLabelText('Ordered');
+    expect(input.tagName).toBe('INPUT');
+    expect(input.nextElementSibling?.tagName).toBe('LABEL');
+    expect(container.querySelector('input[type="checkbox"] + label')).not.toBeNull();
+  });
+
   it('forwards additional props', () => {
     render(<Checkbox id="cb3" label="Disabled" disabled data-testid="checkbox" />);
 
