@@ -2,6 +2,21 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MenuBar } from './MenuBar';
 
+/** テスト用の DOMRect スタブ */
+function rect(bottom: number, left: number): DOMRect {
+  return {
+    top: bottom,
+    bottom,
+    left,
+    right: left,
+    width: 0,
+    height: 0,
+    x: left,
+    y: bottom,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
 const SAMPLE_MENUS = [
   {
     label: 'ファイル(F)',
@@ -224,15 +239,13 @@ describe('MenuBar', () => {
     expect(menuItem).toBeVisible();
     expect(menuItem).toBeInTheDocument();
 
-    // Get the menubar container
+    // ポップアップ層は menubar の外 (document.body) へ fixed で描画されるため、
+    // overflow: hidden を持つ祖先にクリップされない
     const menuBar = container.firstChild as HTMLElement;
-
-    // Verify the dropdown is rendered as a child of the menubar
-    // This would fail if overflow: hidden was applied because the dropdown
-    // is absolutely positioned and would be clipped
-    const dropdown = menuBar.querySelector('[role="menu"]');
-    expect(dropdown).toBeTruthy();
-    expect(dropdown?.parentElement).toBeTruthy();
+    const dropdown = screen.getByRole('menu');
+    expect(menuBar.contains(dropdown)).toBe(false);
+    expect(dropdown.parentElement).toBe(document.body);
+    expect(dropdown.style.position).toBe('fixed');
   });
 
   it('top-level menu items have non-wrapping text content', () => {
@@ -434,6 +447,64 @@ describe('MenuBar submenu hover lifecycle', () => {
 
     // Submenu children should NOT be visible because submenu is disabled
     expect(screen.queryByText('doc.txt')).not.toBeInTheDocument();
+  });
+
+  it('renders the dropdown in a popup layer outside the menubar subtree', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    fireEvent.click(screen.getByText(/ファイル/));
+
+    const menu = screen.getByRole('menu');
+    const menubar = screen.getByRole('menubar');
+
+    expect(menubar.contains(menu)).toBe(false);
+    expect(document.body.contains(menu)).toBe(true);
+    expect(menu.style.position).toBe('fixed');
+    expect(Number(menu.style.zIndex)).toBeGreaterThan(1000);
+  });
+
+  it('positions the popup layer below its trigger', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const trigger = screen.getByText(/ファイル/).closest('[role="menuitem"]') as HTMLElement;
+    trigger.getBoundingClientRect = () => rect(58, 24);
+
+    fireEvent.click(trigger);
+
+    const menu = screen.getByRole('menu');
+    expect(menu.style.top).toBe('58px');
+    expect(menu.style.left).toBe('24px');
+  });
+
+  it('repositions the popup layer when the viewport changes', () => {
+    render(<MenuBar menus={SAMPLE_MENUS} />);
+    const trigger = screen.getByText(/ファイル/).closest('[role="menuitem"]') as HTMLElement;
+    let box = rect(58, 24);
+    trigger.getBoundingClientRect = () => box;
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole('menu').style.top).toBe('58px');
+
+    box = rect(90, 40);
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    const menu = screen.getByRole('menu');
+    expect(menu.style.top).toBe('90px');
+    expect(menu.style.left).toBe('40px');
+  });
+
+  it('keeps the popup layer open while interacting with it', () => {
+    const onClick = vi.fn();
+    render(
+      <MenuBar menus={[{ label: 'ファイル(F)', items: [{ type: 'item', label: '開く', onClick }] }]} />,
+    );
+    fireEvent.click(screen.getByText(/ファイル/));
+
+    fireEvent.mouseDown(screen.getByRole('menu'));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('開く'));
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });
 

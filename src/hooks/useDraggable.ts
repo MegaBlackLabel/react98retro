@@ -110,6 +110,7 @@ export function useDraggable(options?: {
   } | null>(null);
 
   const rafIdRef = useRef<number | null>(null);
+  const rafPendingRef = useRef(false);
   const pendingPositionRef = useRef<DraggablePosition | null>(null);
   const latestPointerRef = useRef<{ clientX: number; clientY: number }>({ clientX: 0, clientY: 0 });
 
@@ -157,9 +158,11 @@ export function useDraggable(options?: {
       // Throttle position updates to rAF to avoid layout thrash
       pendingPositionRef.current = nextPos;
       latestPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
-      if (rafIdRef.current !== null) return; // rAF already pending
+      if (rafPendingRef.current) return; // rAF already pending
 
-      rafIdRef.current = window.requestAnimationFrame(() => {
+      rafPendingRef.current = true;
+      const rafId = window.requestAnimationFrame(() => {
+        rafPendingRef.current = false;
         rafIdRef.current = null;
         if (pendingPositionRef.current) {
           setPosition(pendingPositionRef.current);
@@ -193,6 +196,9 @@ export function useDraggable(options?: {
           }
         }
       });
+      // 同期実行され得る rAF 実装 (テスト等) ではコールバックが先に走るので、
+      // まだ pending のときだけ cancel 用 id を保持する
+      if (rafPendingRef.current) rafIdRef.current = rafId;
     },
     [setPosition, setSnapTarget],
   );
@@ -203,8 +209,9 @@ export function useDraggable(options?: {
       if (!currentDragState || currentDragState.pointerId !== pointerId) return;
 
       // Cancel pending rAF
-      if (rafIdRef.current !== null) {
-        window.cancelAnimationFrame(rafIdRef.current);
+      if (rafPendingRef.current) {
+        if (rafIdRef.current !== null) window.cancelAnimationFrame(rafIdRef.current);
+        rafPendingRef.current = false;
         rafIdRef.current = null;
         pendingPositionRef.current = null;
       }

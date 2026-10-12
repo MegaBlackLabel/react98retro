@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { act } from '@testing-library/react';
 
 // Mock requestAnimationFrame to run synchronously in test environment.

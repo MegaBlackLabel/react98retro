@@ -14,14 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `useWindowManager` shrink/resize request state with `requestResize`, `clearResizeRequest`, `restoreShrink`, and `setWindowSnapped`.
 - `Window` integration that resolves overlap by z-order priority, restores pre-shrink geometry on unsnap or manual drag/resize, and falls back to existing move-away behavior when shrink is impossible.
 - Storybook `SnapOverlapShrink` scenario and Playwright visual QA script to verify zero overlap area after snap.
+- `pack:lib` script (build + `bun pm pack`) and `prepublishOnly` guard so the published tarball always matches `exports`.
 
 ### Changed
 
 - `WindowManagerContext` now exposes `resizeRequests`, `preShrinkGeometries`, `requestResize`, `clearResizeRequest`, `restoreShrink`, and `setWindowSnapped`.
+- `MenuBar` dropdowns now render into a popup layer on `document.body` (`position: fixed`, high `z-index`) instead of inside the menubar subtree, so they are no longer hidden behind other windows or clipped by ancestor overflow.
+- `Window` forwards arbitrary DOM props (`data-testid`, `aria-*`, ...) to its root element; a consumer `onPointerDown` is composed with the internal focus handling.
+- Package metadata: `exports` now points `./style.css` at the emitted `dist/style.css`, `types` comes first, and `./package.json` is exported.
+- Dependencies updated to their latest releases (React 19.3, Vite 8.3, Vitest 5, Storybook 10.6, ESLint 10.12, `@testing-library/jest-dom` 7, jsdom 30, Playwright 1.64, ...).
+- TypeScript now runs as two toolchains: `@typescript/native` (TS 7 compiler for `tsc -b`) plus the TS 6 API package that `typescript-eslint` and `vite-plugin-dts` consume.
 
 ### Fixed
 
 - Background snapped windows no longer remain hidden behind overlapping foreground snapped windows when `autoMoveOnSnap` is enabled.
+- `import '@megablacklabel/react98retro/style.css'` failed to resolve because the export pointed at `dist/style.css` while the build emitted `dist/react98retro.css`.
+- Consumers' `vite build` failed with `SyntaxError: [lightningcss minify] Invalid media query` because the bundled 98.css uses `@media (not(hover))`; the shipped CSS is now normalized to `@media not (hover)`.
+- Snap preview could stay on screen after the pointer left the snap zone: the rAF throttle flag was never cleared when `requestAnimationFrame` runs synchronously.
+- `Tabs` keyboard navigation no longer relies on a dead `nextIdx` initialization (`no-useless-assignment`), and `FileExplorer` callbacks declare their `setSelectedIds` dependency.
 
 
 ## [0.2.2] - 2026-06-12

@@ -2,10 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 import prefixSelector from 'postcss-prefix-selector';
+import { normalizeNotFeatures } from './build/postcss-normalize-not-features.ts';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -29,15 +30,23 @@ export default defineConfig({
             return prefixedSelector;
           },
         }),
+        normalizeNotFeatures(),
       ],
     },
   },
+  // デモ用アセットを配布物にコピーしない
+  publicDir: false,
   build: {
-    cssMinify: false,
+    // 同梱 98.css の @media (not(hover)) を lightningcss (Vite 8 既定) が
+    // invalid として落とすため esbuild minifier を使う
+    cssMinify: 'esbuild',
     lib: {
       entry: path.resolve(dirname, 'src/index.ts'),
       name: 'React98Retro',
       fileName: 'react98retro',
+      // package.json の "./style.css" export と一致させる。
+      // Vite はこの値に ".css" を付けて出力するので "style" → dist/style.css
+      cssFileName: 'style',
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],

@@ -283,7 +283,7 @@ export function FileExplorer({
     if (newId) {
       setSelectedIds([newId]);
     }
-  }, [createFolder, currentPath]);
+  }, [createFolder, currentPath, setSelectedIds]);
 
   const handleDelete = useCallback(() => {
     if (!selectedIds.length) return;
@@ -315,7 +315,7 @@ export function FileExplorer({
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds(currentChildren.map((item) => item.id));
-  }, [currentChildren]);
+  }, [currentChildren, setSelectedIds]);
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -335,7 +335,7 @@ export function FileExplorer({
     onPaste: handlePaste,
     onSelectAll: handleSelectAll,
     onViewModeChange: handleViewModeChange,
-  }), [canRename, currentChildren, handleCopy, handleCut, handleDelete, handleNewFolder, handlePaste, handleRename, handleSelectAll, hasClipboard, onClose, selectedIds.length, viewMode, handleViewModeChange]);
+  }), [canRename, handleCopy, handleCut, handleDelete, handleNewFolder, handlePaste, handleRename, handleSelectAll, hasClipboard, onClose, selectedIds.length, viewMode, handleViewModeChange]);
 
   const toolbarItems = useMemo(() => buildToolbar(
     canGoBack,
