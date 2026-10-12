@@ -132,7 +132,7 @@
 }
 
 .iconLabel {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.2;
   margin-top: 4px;
   word-break: break-word;
@@ -186,7 +186,7 @@
 }
 
 .listLabel {
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
