@@ -67,7 +67,7 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
       const currentIdx = enabledTabs.findIndex((t) => t.id === activeTabId);
       const actualIdx = currentIdx === -1 ? 0 : currentIdx;
 
-      let nextIdx: number | null = null;
+      let nextIdx: number;
 
       switch (e.key) {
         case 'ArrowRight':
@@ -86,11 +86,9 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(
           return;
       }
 
-      if (nextIdx !== null) {
-        e.preventDefault();
-        const nextTab = enabledTabs[nextIdx];
-        handleTabClick(nextTab.id);
-      }
+      e.preventDefault();
+      const nextTab = enabledTabs[nextIdx];
+      handleTabClick(nextTab.id);
     };
 
     return (

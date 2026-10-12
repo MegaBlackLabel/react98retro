@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import styles from './MenuBar.module.css';
 
@@ -50,6 +51,33 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
   const [openSubmenuIndex, setOpenSubmenuIndex] = useState<number | null>(null);
   const submenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const triggerRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  /**
+   * ポップアップ層は portal に出るので、trigger の位置から fixed 座標を直接書き込む。
+   * state 経由にすると effect 内 setState になり余計な再レンダリングを招くため imperative に扱う。
+   */
+  const applyMenuPosition = useCallback(() => {
+    const panel = menuPanelRef.current;
+    const trigger = openMenuIndex === null ? null : triggerRefs.current[openMenuIndex];
+    if (!panel || !trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    panel.style.top = `${rect.bottom}px`;
+    panel.style.left = `${rect.left}px`;
+  }, [openMenuIndex]);
+
+  useLayoutEffect(() => {
+    applyMenuPosition();
+    if (openMenuIndex === null) return;
+    const handleViewportChange = () => applyMenuPosition();
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [openMenuIndex, applyMenuPosition]);
 
   const closeAll = useCallback(() => {
     setOpenMenuIndex(null);
@@ -67,7 +95,10 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
   useEffect(() => {
     if (openMenuIndex === null) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // ポップアップ層は menubar の DOM 外 (portal) に出るので個別に判定する
+      if (menuPanelRef.current?.contains(target)) return;
+      if (containerRef.current && !containerRef.current.contains(target)) {
         closeAll();
       }
     };
@@ -247,9 +278,11 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
     >
       <div className={styles.grip} aria-hidden="true" />
       {menus.map((menu, menuIndex) => (
-        /* ... same as before ... */
         <div
           key={menuIndex}
+          ref={(el) => {
+            triggerRefs.current[menuIndex] = el;
+          }}
           className={clsx(styles.menuBarItem, {
             [styles.menuBarItemActive]: openMenuIndex === menuIndex,
           })}
@@ -260,11 +293,6 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
           aria-expanded={openMenuIndex === menuIndex}
         >
           {renderLabel(menu.label)}
-          {openMenuIndex === menuIndex && (
-            <div className={styles.menu} role="menu">
-              {renderMenuItems(menu.items)}
-            </div>
-          )}
         </div>
       ))}
       {rightIcons && rightIcons.length > 0 && (
@@ -277,6 +305,18 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
           </div>
         </>
       )}
+      {openMenuIndex !== null &&
+        createPortal(
+          <div
+            ref={menuPanelRef}
+            className={styles.menu}
+            role="menu"
+            style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000 }}
+          >
+            {renderMenuItems(menus[openMenuIndex].items)}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

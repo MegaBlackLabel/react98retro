@@ -11,7 +11,11 @@ import styles from './Window.module.css';
 
 const RESIZE_DIRECTIONS: ResizeDirection[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 
-export interface WindowProps {
+export interface WindowProps
+  extends Omit<
+    React.ComponentPropsWithoutRef<'div'>,
+    'title' | 'style' | 'className' | 'children'
+  > {
   title: string;
   icon?: string;
   children?: ReactNode;
@@ -86,6 +90,7 @@ export function Window({
   className,
   zIndex,
   windowId,
+  ...rest
 }: WindowProps) {
   const context = useWindowManagerContext();
   const isManaged = context !== null;
@@ -365,13 +370,16 @@ export function Window({
         ...style,
       };
 
-  const handlePointerDown = () => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // 呼び出し側のハンドラも尊重する (root にはこの合成済みハンドラを付ける)
+    rest.onPointerDown?.(e);
     if (!isManaged || !effectiveWindowId || !context) return;
     context.focus(effectiveWindowId);
   };
 
   const windowRoot = (
     <div
+      {...rest}
       className={clsx('window', styles.window, className)}
       style={{ ...computedStyle, display: 'flex', flexDirection: 'column', zIndex: effectiveZIndex }}
       onPointerDown={handlePointerDown}

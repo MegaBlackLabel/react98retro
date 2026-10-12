@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { readFileSync } from 'node:fs';
@@ -30,6 +30,38 @@ describe('Window', () => {
     const { container } = render(<Window title="Test" zIndex={99} />);
     const windowEl = container.firstChild as HTMLElement;
     expect(windowEl.style.zIndex).toBe('99');
+  });
+
+  it('forwards arbitrary DOM props to the root element', () => {
+    render(<Window title="Test" data-testid="explorer-window" aria-label="Explorer" />);
+    const windowEl = screen.getByTestId('explorer-window');
+    expect(windowEl).toHaveAttribute('aria-label', 'Explorer');
+    expect(windowEl.className).toContain('window');
+  });
+
+  it('keeps Window-specific props off the DOM node', () => {
+    render(
+      <Window
+        title="Test"
+        data-testid="explorer-window"
+        initialX={120}
+        initialY={80}
+        width={640}
+        height={480}
+      />,
+    );
+    const windowEl = screen.getByTestId('explorer-window');
+    expect(windowEl).not.toHaveAttribute('initialX');
+    expect(windowEl).not.toHaveAttribute('title');
+    expect(windowEl.style.width).toBe('640px');
+    expect(windowEl.style.left).toBe('120px');
+  });
+
+  it('calls a consumer onPointerDown as well as focusing the window', () => {
+    const onPointerDown = vi.fn();
+    render(<Window title="Test" data-testid="explorer-window" onPointerDown={onPointerDown} />);
+    fireEvent.pointerDown(screen.getByTestId('explorer-window'));
+    expect(onPointerDown).toHaveBeenCalledOnce();
   });
 
   it('raises the active window z-index when dragging starts', () => {

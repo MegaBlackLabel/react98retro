@@ -47,17 +47,17 @@
   background-color: #a8a8a8;
 }
 
-/* Dropdown menu panel */
+/* Dropdown menu panel — 座標は portal 側で inline 指定する */
 .menu {
-  position: absolute;
-  top: 100%;
+  position: fixed;
+  top: 0;
   left: 0;
   background: #c0c0c0;
   border: 1px solid;
   border-color: #ffffff #808080 #808080 #ffffff;
   box-shadow: 1px 1px 0 #000000;
   min-width: 120px;
-  z-index: 9999;
+  z-index: 10000;
   padding: 2px;
 }
 

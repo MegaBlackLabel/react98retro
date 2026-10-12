@@ -7,14 +7,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
-const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+import { normalizeNotFeatures } from './build/postcss-normalize-not-features.ts';
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react()],
+  css: {
+    postcss: {
+      plugins: [normalizeNotFeatures()],
+    },
+  },
   base: '/react98retro/',
   build: {
-    cssMinify: false,
+    // 98.css の @media (not(hover)) は lightningcss minify が invalid 判定する
+    cssMinify: 'esbuild',
   },
   test: {
     projects: [
