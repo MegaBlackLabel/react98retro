@@ -105,7 +105,7 @@
   align-items: center;
   padding: 3px 16px;
   font-size: 12px;
-  font-family: 'Pixelated MS Sans Serif', Arial, sans-serif;
+  font-family: 'MS UI Gothic', 'MS PGothic', 'Pixelated MS Sans Serif', 'DotGothic16', Arial, sans-serif;
   cursor: default;
   user-select: none;
   white-space: nowrap;
