@@ -107,7 +107,7 @@ export function Window({
 
   const titleBarRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const [isMinimized, setIsMinimized] = useState(minimizedProp ?? false);
+  const [localMinimized, setLocalMinimized] = useState(minimizedProp ?? false);
   const [isMaximized, setIsMaximized] = useState(maximizedProp ?? false);
   const [activeZIndex, setActiveZIndex] = useState(zIndex ?? 1);
   const preSnapPosition = useRef<{ x: number; y: number } | null>(null);
@@ -128,6 +128,8 @@ export function Window({
   const preShrinkGeometries = context?.preShrinkGeometries;
 
   // Managed mode: register/unregister with window manager
+  // (タイトルなどの表示情報は別 effect で更新する。ここで title を依存に入れると
+  //  動的タイトルのたびに unregister → register が走り、z 順・最小化状態が失われる)
   useEffect(() => {
     if (!isManaged || !effectiveWindowId || !register || !unregister) return;
     register(effectiveWindowId);
@@ -136,9 +138,19 @@ export function Window({
     };
   }, [isManaged, effectiveWindowId, register, unregister]);
 
+  // タスクバー表示用のタイトル / アイコンは、登録済みエントリを壊さずに都度更新する
+  useEffect(() => {
+    if (!isManaged || !effectiveWindowId || !register) return;
+    register(effectiveWindowId, { title, icon });
+  }, [isManaged, effectiveWindowId, register, title, icon]);
+
   // Managed mode: get z-index and active state from context
   const managedZIndex = isManaged && effectiveWindowId && context ? (context.windows[effectiveWindowId]?.zIndex ?? 1) : undefined;
   const managedIsActive = isManaged && effectiveWindowId && context ? context.isActive(effectiveWindowId) : undefined;
+  // 最小化はマネージャ側が持つ (タスクバーに収納される) ので、managed ではそちらを優先する
+  const managedMinimized =
+    isManaged && effectiveWindowId && context ? context.windows[effectiveWindowId]?.minimized : undefined;
+  const isMinimized = managedMinimized ?? localMinimized;
 
   // Use managed z-index when available, otherwise fall back to local state
   const effectiveZIndex = managedZIndex !== undefined ? managedZIndex : activeZIndex;
@@ -333,18 +345,33 @@ export function Window({
       : null;
 
   const handleMinimize = () => {
-    setIsMinimized((prev) => !prev);
+    if (isManaged && effectiveWindowId && context) {
+      // Win98 は最小化するとタスクバーに収納される (ウィンドウ自体は描画しない)
+      if (isMinimized) context.restore(effectiveWindowId);
+      else context.minimize(effectiveWindowId);
+      onMinimize?.();
+      return;
+    }
+    setLocalMinimized((prev) => !prev);
     onMinimize?.();
   };
 
   const handleMaximize = () => {
     setIsMaximized(true);
+    if (isManaged && effectiveWindowId) context?.maximize(effectiveWindowId);
     onMaximize?.();
   };
 
   const handleRestore = () => {
     setIsMaximized(false);
+    if (isManaged && effectiveWindowId) context?.restore(effectiveWindowId);
     onRestore?.();
+  };
+
+  // Win98: タイトルバーのダブルクリックで最大化 / 復元
+  const handleTitleBarDoubleClick = () => {
+    if (isMaximized) handleRestore();
+    else handleMaximize();
   };
 
   const computedStyle: CSSProperties = isMinimized
@@ -362,7 +389,8 @@ export function Window({
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100dvh',
+        // タスクバーがある環境では作業領域 (タスクバーの上) まで最大化する
+        height: 'calc(100dvh - var(--win98-work-area-bottom, 0px))',
         ...style,
       }
     : {
@@ -424,6 +452,7 @@ export function Window({
         onMaximize={handleMaximize}
         onRestore={handleRestore}
         onClose={onClose}
+        onDoubleClick={handleTitleBarDoubleClick}
         {...(isMinimized ? {} : dragHandleProps)}
       />
       {!isMinimized && (
@@ -480,6 +509,9 @@ export function Window({
         })}
     </div>
   );
+
+  // managed で最小化されているときはウィンドウを描画しない (タスクバーに収納済み)
+  if (isManaged && isMinimized) return null;
 
   return (
     <>

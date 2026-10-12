@@ -6,6 +6,9 @@
   box-sizing: border-box;
   outline: none;
   padding: 1px 0;
+  /* 実機 Win98SE のメニューバー帯 = 22px (アイテム 20px + 上下 1px)。
+     フォント差で高さがぶれないよう固定する */
+  height: 22px;
   flex-wrap: nowrap;
   /* Note: overflow: hidden is intentionally NOT used here because dropdown 
      menus are absolutely positioned children that could be clipped. 
@@ -31,7 +34,12 @@
 /* Top-level menu item button */
 .menuBarItem {
   position: relative;
-  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  /* 実機のメニュー アイテム = 20px */
+  height: 20px;
+  padding: 0 6px;
   cursor: default;
   user-select: none;
   font-size: 11px;

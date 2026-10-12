@@ -12,8 +12,13 @@ html, body, #root {
 }
 
 body {
-  font-family: 'DotGothic16', sans-serif;
+  font-family: 'DotGothic16', 'MS UI Gothic', 'MS PGothic', sans-serif;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* タスクバーの高さ (Win98 実機 = 28px)。Window の最大化はこの分を除いた作業領域に収まる。 */
+.win98 {
+  --win98-work-area-bottom: 28px;
 }

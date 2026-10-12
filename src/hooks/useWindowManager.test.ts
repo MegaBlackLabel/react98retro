@@ -403,6 +403,34 @@ describe('useWindowManager', () => {
       expect(result.current.windows['win1']).toBe(before);
     });
 
+    it('register with display info updates the title without touching z-order or state', () => {
+      const { result } = renderHook(() => useWindowManager(['win1', 'win2']));
+
+      act(() => {
+        result.current.focus('win1');
+        result.current.minimize('win2');
+        result.current.register('win2', { title: 'フォルダ', icon: '/i/folder.svg' });
+      });
+
+      const win2 = result.current.windows['win2'];
+      expect(win2.title).toBe('フォルダ');
+      expect(win2.icon).toBe('/i/folder.svg');
+      // 動的なタイトル更新で最小化や z が失われないこと
+      expect(win2.minimized).toBe(true);
+      expect(result.current.activeWindowId).toBe('win1');
+
+      act(() => {
+        result.current.register('win2', { title: 'マイ コンピュータ' });
+      });
+
+      const updated = result.current.windows['win2'];
+      expect(updated.title).toBe('マイ コンピュータ');
+      expect(updated.icon).toBe('/i/folder.svg');
+      expect(updated.minimized).toBe(true);
+      expect(updated.zIndex).toBe(win2.zIndex);
+      expect(result.current.activeWindowId).toBe('win1');
+    });
+
     it('unregister of unknown id is a no-op', () => {
       const { result } = renderHook(() => useWindowManager(['win1']));
 
