@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- サイズ グリップの形を修正: 三角形のクリップをやめ、**四角い領域 (横 5px × 縦 12px)** に 45° のドットを敷く形にした。実物はステータスバー右端の四角い領域の中に斜め線が入る (以前は三角形に切っていたので、斜め線も三角に見えていた)
+
 ## [0.4.1] - 2026-10-13
 
 ### Fixed
