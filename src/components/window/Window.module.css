@@ -13,12 +13,14 @@
 .sw { bottom: -3px; left: -3px;   width: 10px;  height: 10px; cursor: sw-resize; }
 .nw { top: -3px;    left: -3px;   width: 10px;  height: 10px; cursor: nw-resize; }
 
-/* Visual size grip with 3 diagonal raised lines, clipped to triangle.
-   実測 (Win98 のウィンドウ右下) は「1px の白 + 2px の #808080」を 4px ピッチで 45°に
-   3 本。以前は灰が 1px で、段の半分の太さだった。 */
+/* Visual size grip: 実測 (Win98 のウィンドウ右下) は 45° のドット 3 本。
+   規則は (x + y) % 4 == 0 が #ffffff、1 と 2 が #808080、3 が面の色 = 4px ピッチで
+   「白 1px + 灰 2px + 面 1px」。斜辺がその対角線に乗る三角形に切る。
+   135deg のグラデーションだと「1px」が軸方向の長さになって水平 1px にならないため、
+   4x4 のタイル (SVG) を敷き詰めて 1px が 1px になるようにしている。 */
 .sizeGrip {
   position: absolute;
-  /* 実測: ステータスバー (19px) の中で、右端から 3px / 下端から 3px、12x12。 */
+  /* 実測: ステータスバー (22px) の中で、右端から 3px / 下端から 3px、12x12 (タイル 3 枚)。 */
   bottom: 3px;
   right: 3px;
   width: 12px;
@@ -27,25 +29,9 @@
   z-index: 11;
   touch-action: none;
   clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
-  background:
-    linear-gradient(135deg,
-      transparent calc(100% - 4px),
-      #ffffff calc(100% - 4px), #ffffff calc(100% - 3px),
-      #808080 calc(100% - 3px), #808080 calc(100% - 1px),
-      transparent calc(100% - 1px)
-    ),
-    linear-gradient(135deg,
-      transparent calc(100% - 8px),
-      #ffffff calc(100% - 8px), #ffffff calc(100% - 7px),
-      #808080 calc(100% - 7px), #808080 calc(100% - 5px),
-      transparent calc(100% - 5px)
-    ),
-    linear-gradient(135deg,
-      transparent calc(100% - 12px),
-      #ffffff calc(100% - 12px), #ffffff calc(100% - 11px),
-      #808080 calc(100% - 11px), #808080 calc(100% - 9px),
-    transparent calc(100% - 9px)
-    );
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M0 0h1v1H0zM3 1h1v1H3zM2 2h1v1H2zM1 3h1v1H1z'/%3E%3C/g%3E%3Cg fill='%23808080'%3E%3Cpath d='M1 0h2v1H1zM0 1h2v1H0zM0 2h1v1H0zM3 2h1v1H3zM2 3h2v1H2z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  image-rendering: pixelated;
 }
 
 .snapPreview {
