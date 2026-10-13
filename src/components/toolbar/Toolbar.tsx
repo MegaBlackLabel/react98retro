@@ -40,9 +40,15 @@ export type ToolbarItemDef =
 
 export type ToolbarProps = {
   items: ToolbarItemDef[];
-} & React.ComponentPropsWithoutRef<'div'>;
+  /**
+   * `band` はツールバー帯 (ドッキング ツールバー) に詰める形。内容を実物の
+   * ツールバー ボタンと同じ 22px ちょうどにして、上下の 1px を外す。
+   * 帯の中で使うときは `ToolbarBand` と組み合わせる。
+   */
+  variant?: 'plain' | 'band';
+} & React.ComponentPropsWithRef<'div'>;
 
-export function Toolbar({ items, className, ...rest }: ToolbarProps) {
+export function Toolbar({ items, variant = 'plain', className, ...rest }: ToolbarProps) {
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,7 +83,12 @@ export function Toolbar({ items, className, ...rest }: ToolbarProps) {
   }, [openDropdownId]);
 
   return (
-    <div ref={containerRef} role="toolbar" className={clsx(styles.toolbar, className)} {...rest}>
+    <div
+      ref={containerRef}
+      role="toolbar"
+      className={clsx(styles.toolbar, variant === 'band' && styles.band, className)}
+      {...rest}
+    >
       <div className={styles.grip} aria-hidden="true" />
       {items.map((item, i) => {
         if (item.type === 'separator') {

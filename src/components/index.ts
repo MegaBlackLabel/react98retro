@@ -45,6 +45,14 @@ export type { MenuProps, MenuItem } from './menu/Menu';
 
 export { Toolbar } from './toolbar';
 export type { ToolbarProps, ToolbarItemDef } from './toolbar';
+export { ToolbarBand, ToolbarRow, packToolbarRows, useToolbarRows } from './toolbar';
+export type {
+  ToolbarBandProps,
+  ToolbarRowProps,
+  PackToolbarRowsOptions,
+  UseToolbarRowsOptions,
+  UseToolbarRowsResult,
+} from './toolbar';
 
 export { AddressBar } from './address-bar';
 export type { AddressBarProps, AddressBarItem } from './address-bar';
@@ -69,3 +77,6 @@ export type { StartMenuProps, StartMenuItem } from './start-menu';
 
 export { DesktopIcons } from './desktop-icons';
 export type { DesktopIconItem, DesktopIconsProps } from './desktop-icons';
+
+export { Groove } from './groove';
+export type { GrooveProps, GrooveOrientation } from './groove';

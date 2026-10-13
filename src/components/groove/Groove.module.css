@@ -1,0 +1,16 @@
+/* 凹んだ溝 (2px)。暗が上 (左)、明が下 (右)。色は共通トークンで差し替えられる。 */
+
+.horizontal {
+  height: 0;
+  border-top: 1px solid var(--win98-groove-dark, #808080);
+  border-bottom: 1px solid var(--win98-groove-light, #ffffff);
+  flex-shrink: 0;
+}
+
+.vertical {
+  width: 0;
+  border-left: 1px solid var(--win98-groove-dark, #808080);
+  border-right: 1px solid var(--win98-groove-light, #ffffff);
+  align-self: stretch;
+  flex-shrink: 0;
+}

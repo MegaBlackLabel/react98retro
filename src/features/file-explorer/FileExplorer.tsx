@@ -8,6 +8,7 @@ import { Toolbar } from '../../components/toolbar/Toolbar';
 import type { ToolbarItemDef } from '../../components/toolbar/Toolbar';
 import { AddressBar } from '../../components/address-bar/AddressBar';
 import { StatusBar, StatusBarField } from '../../components/window/StatusBar';
+import { Groove } from '../../components/groove';
 import { FileTree } from './FileTree';
 import { FileList } from './FileList';
 import { useFileSystem, DEFAULT_FS, type FSNode, type ViewMode } from './useFileSystem';
@@ -460,16 +461,16 @@ export function FileExplorer({
     >
       <div className={styles.explorerBody}>
         <MenuBar menus={menus} rightIcons={[ICONS.windowsSlanted]} />
-        <div className={styles.groove} />
+        <Groove />
         <Toolbar items={toolbarItems} />
-        <div className={styles.groove} />
+        <Groove />
         <AddressBar
           value={displayPath}
           onNavigate={navigate}
           history={historyOptions}
           label="アドレス(D):"
         />
-        <div className={styles.groove} />
+        <Groove />
         <div className={styles.mainContent}>
           <div className={styles.leftPane} style={{ width: leftWidth }}>
             <FileTree

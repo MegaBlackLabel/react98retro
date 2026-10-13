@@ -3,9 +3,55 @@
   flex-direction: row;
   align-items: center;
   padding: 1px 2px;
-  gap: 1px;
+  gap: var(--win98-toolbar-gap, 1px);
   background: #c0c0c0;
   position: relative;
+}
+
+/* 帯 (ドッキング ツールバー) に詰めるときの形。内容を実物のツールバー ボタンと同じ
+   22px ちょうどにして、上下の 1px を外す。左右の 2px は残す。 */
+.band {
+  height: var(--win98-toolbar-content-height, 22px);
+  padding: 0 2px;
+  box-sizing: border-box;
+}
+
+/* ツールバー帯。外周の溝を自分で持ち、段を縦に並べる。 */
+.bandContainer {
+  display: flex;
+  flex-direction: column;
+  background: #c0c0c0;
+  flex: 0 0 auto;
+  /* 上辺の外へ暗 1px、下辺の外へ暗 1px (#000000)。どちらも帯の外に描くので総高は 1px しか増えない。 */
+  box-shadow: 0 -1px 0 var(--win98-groove-dark, #808080), 0 1px 0 #000000;
+  /* 上辺の明 1px。 */
+  border-top: 1px solid var(--win98-groove-light, #ffffff);
+  /* 明と暗の間の銀 1px (下辺の内側)。 */
+  padding-bottom: 1px;
+  /* 下辺の暗 1px。 */
+  border-bottom: 1px solid var(--win98-groove-dark, #808080);
+  /* 前後の兄弟の 1px を隠して溝を描くので、重ね合わせの単位を持つ兄弟 (選択タブなど) より上に置く。 */
+  position: relative;
+  z-index: 9;
+  isolation: isolate;
+}
+
+/* 折り返した段と段の間。銀 1px + 溝 2px + 銀 2px。 */
+.bandRowGroove {
+  margin: 1px 0 2px;
+}
+
+/* ツールバー 1 段。計測が終わるまでは CSS でも折り返し、子は縮めない (縮むと幅を測れない)。 */
+.bandRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--win98-toolbar-gap, 1px);
+  background: #c0c0c0;
+}
+
+.bandRow > * {
+  flex: 0 0 auto;
 }
 
 /* Win98-style stipple grip – tiny 3D raised bumps */
@@ -76,10 +122,11 @@
 
 .separator {
   width: 0;
-  /* ボタン (22px) に合わせて上下 3px 内側まで */
-  height: 16px;
-  border-left: 1px solid #808080;
-  border-right: 1px solid #ffffff;
+  /* 実測: Win98 ヘルプのツールバー画像 (TOOLBAR.PNG) の区切り線は 18px。
+     22px ボタンの上下 2px 内側。以前は 16px (上下 3px 内側) で短かった。 */
+  height: var(--win98-toolbar-separator-height, 18px);
+  border-left: 1px solid var(--win98-groove-dark, #808080);
+  border-right: 1px solid var(--win98-groove-light, #ffffff);
   margin: 0 3px;
   flex-shrink: 0;
 }

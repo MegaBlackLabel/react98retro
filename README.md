@@ -16,7 +16,11 @@ React で Windows 98 のコンポーネントを実装しました。
 
 - **Window** — タイトルバー付き、ドラッグ移動・リサイズ対応ウィンドウ（`data-testid` などの任意 DOM props をそのまま転送。`modal` でダイアログ化）
 - **MenuBar** — プルダウンメニュー付きメニューバー（ドロップダウンはポータル層 `document.body` に描画されるので他ウィンドウの下に隠れない。トップレベル項目に `data-menu-id` を出力）
-- **Toolbar** — アイコン＋ラベル付きツールバー（SplitButton 対応）
+- **Toolbar** — アイコン＋ラベル付きツールバー（SplitButton 対応。`variant="band"` で帯に詰める形になり、`--win98-toolbar-*` で寸法を差し替えられる）
+- **ToolbarBand** — ツールバー帯（ドッキング ツールバー）。外周の溝と、折り返した段の間の溝を持つ
+- **ToolbarRow** — ツールバー 1 段の枠。計測が終わるまで CSS でも折り返し、子を縮めない
+- **useToolbarRows / packToolbarRows** — 帯と項目の幅を測って段に詰める（`keepWithNext` 対応、`ResizeObserver` 無しでも 1 段で動く）
+- **Groove** — 2px の凹んだ区切り線（横 = 帯と帯の間 / 縦 = 同じ帯の中の区切り）
 - **AddressBar** — アドレスバー（ドロップダウン履歴付き）
 - **TreeView** — フォルダツリー
 - **TableView** — 列リサイズ対応ファイル一覧テーブル（行 `id` は `string | number`。内部で文字列に正規化してハイライト判定する。`onRowContextMenu` で行の右クリックを受け取れる）
@@ -176,6 +180,75 @@ CSS minify は既定のままで問題ありません（consumer 側で `build.c
    バックドロップがずれます） */
 .my-desktop-label {
   will-change: transform;
+}
+```
+
+### 7. ツールバー帯と溝
+
+Win98 のドッキング ツールバーは、帯 (バンド) と段 (行) と 2px の溝でできています。
+幅に合わせて段に詰め直す計測もライブラリ側にあります。
+
+```tsx
+import { Toolbar, ToolbarBand, ToolbarRow, useToolbarRows, Groove } from '@megablacklabel/react98retro';
+
+// 1 段の帯
+<ToolbarBand
+  rows={[
+    <ToolbarRow key="row">
+      <Toolbar items={items} variant="band" />
+    </ToolbarRow>,
+  ]}
+/>
+
+// 幅に合わせて折り返す帯 (計測 + 詰め + 段間の溝)
+function DockedToolbar({ groups }: { groups: ToolbarItemDef[][] }) {
+  const { stripRef, itemRefs, rows } = useToolbarRows({ count: groups.length, gap: 2 });
+
+  return (
+    <ToolbarBand
+      ref={stripRef}
+      rows={rows.map((row) => (
+        <ToolbarRow key={row[0]}>
+          {row.map((index) => (
+            <Toolbar
+              key={index}
+              variant="band"
+              items={groups[index]}
+              ref={(element) => { itemRefs.current[index] = element; }}
+            />
+          ))}
+        </ToolbarRow>
+      ))}
+    />
+  );
+}
+
+// 帯と帯の間の区切り (横) / 同じ帯の中の区切り (縦)
+<Groove />
+<Groove orientation="vertical" />
+```
+
+- `useToolbarRows` が帯と各項目の幅を測り、`packToolbarRows` で段に詰めます。ウィンドウのリサイズ・フォントの読み込み・項目の増減で詰め直し、`ResizeObserver` が無い環境 (SSR など) では計測せず 1 段のまま返します
+- 詰める単位は「項目」です。`keepWithNext` を渡すと、ラベルとコントロールのように離したくない項目を段の末尾に残しません
+- `ToolbarRow` は `flex-wrap: wrap` で、計測が終わるまでは CSS 側でも折り返します。子は `flex: 0 0 auto` で縮めません (縮むと幅を測れず、段分けが決まらないため)
+- `Toolbar` の `variant="band"` は、内容を実物のツールバー ボタンと同じ **22px ちょうど** に詰めます (既定の `plain` は上下 1px の余白付き)
+- `ToolbarBand` は外周の溝 (上辺の外の暗 1px / 上辺の明 1px / 明と暗の間の銀 1px / 下辺の暗 2px) を持ち、折り返した段の間には 銀 1px + 溝 2px + 銀 2px を空けます
+- `Groove` は 2px の凹んだ区切り (上/左が `#808080`、下/右が `#ffffff`)。逆向きにすると凸った「浮いた線」に見えるので向きは固定です
+
+寸法は CSS 変数で差し替えられます (帯の中の間隔を 4px にしたい、区切り線の高さを変えたい等)。
+
+| 変数 | 既定 | 用途 |
+|---|---|---|
+| `--win98-toolbar-separator-height` | `18px` | ツールバーの区切り線の高さ (実測: Win98 ヘルプのツールバー画像で 22px ボタンの上下 2px 内側) |
+| `--win98-toolbar-content-height` | `22px` | 帯に詰めるときの内容の高さ |
+| `--win98-toolbar-gap` | `1px` | ツールバー内の項目の間隔 |
+| `--win98-groove-dark` | `#808080` | 溝の暗い側 |
+| `--win98-groove-light` | `#ffffff` | 溝の明るい側 |
+
+```css
+.my-docked-toolbar {
+  --win98-toolbar-gap: 4px;
+  --win98-toolbar-separator-height: 18px;
 }
 ```
 
