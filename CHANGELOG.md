@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-13
+
+### Added
+
+- `DesktopIcons` コンポーネント: デスクトップのアイコン層。クリックで選択、ダブルクリック / Enter で開く、ドラッグ移動と 75px グリッド吸着 (`onSelect` / `onOpen` / `onMove`)。`role="listbox"` + 各アイコン `role="option"` なので選択状態がスクリーン リーダーに伝わる。
+- `StartMenu` コンポーネント: 左端の縦帯バナー付きスタート メニュー。サブメニュー (150ms ホバー ディレイ)、セパレータ、無効項目、Escape / 矢印キー操作に対応。`ignoreOutsidePressSelector` で、スタート ボタンのような「メニューの外にあるトグル要素」を外側クリック判定から除外できる。
+- `FileExplorer` の右クリック メニュー: 項目メニュー (開く / 切り取り / コピー / 名前の変更 / 削除) と余白メニュー (新規作成 ▸ フォルダ / 貼り付け / すべて選択)。`document.body` のポップアップ層に描画するので、ウィンドウの `overflow` や他ウィンドウの下に隠れない。右クリックした項目が未選択なら選択してからメニューを出す (Win98 と同じ挙動)。
+- `TableView.onRowContextMenu`: 行の右クリックでブラウザ既定メニューを抑制して受け取れる。
+- `Menu` が任意の DOM props を転送するようになり、`style` で位置を指定できる (コンテキスト メニュー用途)。
+- `Taskbar` のスタート ボタンに `data-taskbar-start` 属性を付与 (外側クリック除外の目印)。
+- デモにデスクトップ アイコン 3 個 (マイ コンピュータ / マイ ドキュメント / ごみ箱) とスタート メニューを配線。
+
+### Changed
+
+- `@types/node` 26.6.4 → 26.6.5。
+
+### Fixed
+
+- スタート ボタンが「開くだけ」になっていた問題。メニュー表示中にボタンを押すと、外側クリック判定で閉じた直後の click が再度開いてしまっていた。
+- Firefox など `::-webkit-scrollbar` が効かないブラウザでネイティブ スクロールバーになるのを避け、`scrollbar-color` で Win98 の 3D スクロールバーに寄せた。
+
 ## [0.2.6] - 2026-10-13
 
 ### Added
