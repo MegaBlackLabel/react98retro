@@ -53,7 +53,8 @@
   user-select: none;
 }
 
-/* ただし外枠の中の入力 (ツールバーのアドレス欄など) は選択できる */
+/* ただし外枠の中に置いた入力 (ツールバーに入れる TextBox など) は選択できる。
+   アドレスバーは <select> なので、そもそも文字を選択できない。 */
 .win98 [role='toolbar'] input,
 .win98 [role='toolbar'] textarea,
 .win98 .title-bar input,
