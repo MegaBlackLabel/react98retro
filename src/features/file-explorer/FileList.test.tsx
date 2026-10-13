@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -313,5 +313,62 @@ describe('FileList view modes', () => {
       'Alpha Folder',
       'small.txt',
     ]);
+  });
+
+  it('右クリックした項目を onItemContextMenu に渡す (詳細表示)', () => {
+    const onItemContextMenu = vi.fn();
+    render(
+      <FileList
+        items={items}
+        selectedIds={[]}
+        onSelectionChange={vi.fn()}
+        onNavigate={vi.fn()}
+        onItemContextMenu={onItemContextMenu}
+      />,
+    );
+
+    const row = screen.getByText('small.txt').closest('tr') as HTMLElement;
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 60 });
+    fireEvent(row, event);
+
+    expect(onItemContextMenu).toHaveBeenCalledOnce();
+    expect(onItemContextMenu.mock.calls[0][0]).toMatchObject({ id: 'file-small' });
+    expect(onItemContextMenu.mock.calls[0][1]).toEqual({ x: 40, y: 60 });
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('アイコン表示でも右クリックした項目を onItemContextMenu に渡す', () => {
+    const onItemContextMenu = vi.fn();
+    render(
+      <FileList
+        items={items}
+        selectedIds={[]}
+        onSelectionChange={vi.fn()}
+        onNavigate={vi.fn()}
+        viewMode="largeIcons"
+        onItemContextMenu={onItemContextMenu}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getByText('small.txt'), { clientX: 10, clientY: 20 });
+
+    expect(onItemContextMenu.mock.calls[0][0]).toMatchObject({ id: 'file-small' });
+  });
+
+  it('余白の右クリックは onBackgroundContextMenu に渡す', () => {
+    const onBackgroundContextMenu = vi.fn();
+    render(
+      <FileList
+        items={items}
+        selectedIds={[]}
+        onSelectionChange={vi.fn()}
+        onNavigate={vi.fn()}
+        onBackgroundContextMenu={onBackgroundContextMenu}
+      />,
+    );
+
+    fireEvent.contextMenu(screen.getAllByRole('row')[0], { clientX: 5, clientY: 7 });
+
+    expect(onBackgroundContextMenu).toHaveBeenCalledWith({ x: 5, y: 7 });
   });
 });

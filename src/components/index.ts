@@ -63,3 +63,9 @@ export type { TableColumn, TableViewProps, TableSortState, TableSortDirection } 
 
 export { Taskbar } from './taskbar';
 export type { TaskbarProps, TaskbarItem } from './taskbar';
+
+export { StartMenu } from './start-menu';
+export type { StartMenuProps, StartMenuItem } from './start-menu';
+
+export { DesktopIcons } from './desktop-icons';
+export type { DesktopIconItem, DesktopIconsProps } from './desktop-icons';

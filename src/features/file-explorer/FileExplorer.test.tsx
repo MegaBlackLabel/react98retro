@@ -376,4 +376,56 @@ describe('FileExplorer', () => {
     // Release to finish drag
     fireEvent.pointerUp(window, { pointerId: 0 });
   });
+
+  describe('コンテキスト メニュー', () => {
+    it('項目を右クリックすると選択してメニューを開く', () => {
+      render(<FileExplorer />);
+      navigateToDrive();
+      const row = requireRow('My Documents');
+
+      fireEvent.contextMenu(row, { clientX: 200, clientY: 150 });
+
+      const menu = screen.getByRole('menu');
+      expect(within(menu).getByText('開く')).toBeInTheDocument();
+      expect(within(menu).getByText('名前の変更')).toBeInTheDocument();
+      expect(within(menu).getByText('削除')).toBeInTheDocument();
+      expect(row.className).toContain('highlighted');
+    });
+
+    it('メニューの削除で項目が消える', async () => {
+      render(<FileExplorer />);
+      navigateToDrive();
+      expect(rowNamed('My Documents')).toBeTruthy();
+
+      fireEvent.contextMenu(requireRow('My Documents'), { clientX: 10, clientY: 10 });
+      fireEvent.click(within(screen.getByRole('menu')).getByText('削除'));
+
+      expect(rowNamed('My Documents')).toBeUndefined();
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+
+    it('余白の右クリックでは新規作成・貼り付け・すべて選択を出す', () => {
+      render(<FileExplorer />);
+
+      fireEvent.contextMenu(fileListTable(), { clientX: 5, clientY: 5 });
+
+      const menu = screen.getByRole('menu');
+      expect(within(menu).getByText('新規作成')).toBeInTheDocument();
+      expect(within(menu).getByText('貼り付け')).toBeInTheDocument();
+      expect(within(menu).getByText('すべて選択')).toBeInTheDocument();
+      expect(within(menu).queryByText('削除')).toBeNull();
+    });
+
+    it('外側クリックでメニューが閉じる', () => {
+      render(<FileExplorer />);
+      navigateToDrive();
+
+      fireEvent.contextMenu(requireRow('My Documents'), { clientX: 10, clientY: 10 });
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+
+      fireEvent.mouseDown(document.body);
+
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+  });
 });

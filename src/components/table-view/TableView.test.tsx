@@ -134,6 +134,27 @@ describe('TableView', () => {
     expect(onSelectionChange).toHaveBeenCalledWith(['1']);
   });
 
+  it('right-clicking a row calls onRowContextMenu with the row and suppresses the browser menu', () => {
+    const onRowContextMenu = vi.fn();
+    render(<TableView columns={columns} rows={rows} onRowContextMenu={onRowContextMenu} />);
+
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 120, clientY: 40 });
+    fireEvent(screen.getByText('file.txt').closest('tr') as HTMLElement, event);
+
+    expect(onRowContextMenu).toHaveBeenCalledOnce();
+    expect(onRowContextMenu.mock.calls[0][0]).toEqual(rows[0]);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('does not suppress the browser menu when onRowContextMenu is not given', () => {
+    render(<TableView columns={columns} rows={rows} />);
+
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    fireEvent(screen.getByText('file.txt').closest('tr') as HTMLElement, event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it('double-clicking row calls onRowDoubleClick', async () => {
     const user = userEvent.setup();
     const onRowDoubleClick = vi.fn();
