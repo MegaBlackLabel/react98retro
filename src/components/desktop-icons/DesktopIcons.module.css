@@ -1,0 +1,55 @@
+/* デスクトップ全面: 透明な座標系 */
+.root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* アイコン 1 個 (セル幅はインラインで gridSize を指定) */
+.icon {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  cursor: default;
+  outline: none;
+}
+
+.icon:focus-visible {
+  outline: 1px dotted #ffffff;
+  outline-offset: -2px;
+}
+
+.dragging {
+  cursor: move;
+  z-index: 1;
+}
+
+.image {
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Win98 のデスクトップラベル: teal 背景に白文字、2 行まで */
+.label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #ffffff;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+/* 選択中はラベル部分のみ紺に反転する */
+.icon[data-selected='true'] .label {
+  background: #000080;
+}
