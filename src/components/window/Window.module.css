@@ -13,25 +13,28 @@
 .sw { bottom: -3px; left: -3px;   width: 10px;  height: 10px; cursor: sw-resize; }
 .nw { top: -3px;    left: -3px;   width: 10px;  height: 10px; cursor: nw-resize; }
 
-/* Visual size grip: 実測 (Win98 のウィンドウ右下) は 45° のドット 3 本。
-   規則は (x + y) % 4 == 0 が #ffffff、1 と 2 が #808080、3 が面の色 = 4px ピッチで
-   「白 1px + 灰 2px + 面 1px」。斜辺がその対角線に乗る三角形に切る。
-   135deg のグラデーションだと「1px」が軸方向の長さになって水平 1px にならないため、
-   4x4 のタイル (SVG) を敷き詰めて 1px が 1px になるようにしている。 */
+/* Visual size grip: 実測 (Win98 のウィンドウ右下) と確認済みの仕様。
+   - ステータスバーの右端 (フィールドの右辺から先) に置く。右辺は帯の右端に合わせる
+   - 領域は 横 16px × 縦 12px (斜め線 3 本が入る幅)、下端は帯の下端から 3px
+   - 中は 4px ピッチの 45° ドット (白 1px + 灰 2px + 面 1px)
+   - 広がりは階段状: 45° の境界 (実測 x + y = 11) より右下だけにドットを敷く。
+     左上の三角形は面のまま残す */
 .sizeGrip {
   position: absolute;
-  /* 実測: ステータスバー (22px) の中で、右端から 3px / 下端から 3px、12x12 (タイル 3 枚)。 */
-  bottom: 3px;
-  right: 3px;
+  /* ここはウィンドウ枠込みの座標。右辺を帯の右端 (枠の内側) に、下端を帯の下端から 3px に */
+  bottom: 6px;
+  right: 4px;
   width: 12px;
   height: 12px;
   cursor: se-resize;
   z-index: 11;
   touch-action: none;
-  clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff'%3E%3Cpath d='M0 0h1v1H0zM3 1h1v1H3zM2 2h1v1H2zM1 3h1v1H1z'/%3E%3C/g%3E%3Cg fill='%23808080'%3E%3Cpath d='M1 0h2v1H1zM0 1h2v1H0zM0 2h1v1H0zM3 2h1v1H3zM2 3h2v1H2z'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
+  /* 実測の行ごとの本数 (1,1,1,1,2,2,2,2,3,3,3,3) に合わせる位相 */
+  background-position: 0 -1px;
   image-rendering: pixelated;
+  clip-path: polygon(11px 0, 100% 0, 100% 100%, 0 100%, 0 11px);
 }
 
 .snapPreview {

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **ステータスバーの右端に 17px のガター**を追加し、フィールドが右端まで伸びないようにした (実測)
+- **サイズ グリップ**を実測の形に修正: ステータスバーの右端に置く **横 12px × 縦 12px** の領域に、4px ピッチの 45° ドット (白 1px + 灰 2px + 面 1px) を **斜め線 3 本**ぶん敷く。広がりは階段状 (`x + y >= 11` の 45° の境界より右下だけ)、位相は実測の行ごとの本数 (1,1,1,1,2,2,2,2,3,3,3,3) に合わせる。以前は三角形クリップ + 幅 8px で線が 2 本しか入っていなかった
+
 ## [0.4.1] - 2026-10-13
 
 ### Fixed

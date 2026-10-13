@@ -50,6 +50,9 @@
   height: 22px;
   padding: 2px 0;
   border-top: 1px solid #ffffff;
+  /* 右端はグリップのためのガター。フィールドはそこまで伸ばさない
+     (実測: フィールド右辺から帯の右端まで 17px)。 */
+  padding-right: 17px;
   box-sizing: border-box;
 }
 
