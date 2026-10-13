@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **ステータスバー**を実測の形に修正。帯は 22px (上辺が白 1px + 面 2px + フィールド 17px + 面 2px)、フィールドの凹みは「上/左が `#808080`、下/右が `#ffffff`」。98.css の既定はフィールド 20px / 明ベベル `#dfdfdf` だったので、色と高さを実測 (Win98 のウィンドウ右下の 1px 実測) に寄せた
+
 ## [0.4.0] - 2026-10-13
 
 ### Added
