@@ -17,7 +17,7 @@ export type MenuProps = {
   items: MenuItem[];
   onClose?: () => void;
   className?: string;
-};
+} & React.ComponentPropsWithoutRef<'div'>;
 
 function MenuItemRow({
   item,
@@ -92,9 +92,9 @@ function MenuItemRow({
   );
 }
 
-export function Menu({ items, onClose, className }: MenuProps) {
+export function Menu({ items, onClose, className, ...rest }: MenuProps) {
   return (
-    <div className={clsx(styles.panel, className)} role="menu">
+    <div className={clsx(styles.panel, className)} role="menu" {...rest}>
       {items.map((item, i) => (
         <MenuItemRow key={i} item={item} onClose={onClose} />
       ))}

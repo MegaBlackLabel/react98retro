@@ -29,6 +29,13 @@
   text-rendering: auto;
 }
 
+/* Firefox など ::-webkit-scrollbar が効かないブラウザ向け。
+   ネイティブ表示になるのを避け、Win98 の 3D スクロールバーに寄せる。 */
+.win98 * {
+  scrollbar-width: auto;
+  scrollbar-color: #c0c0c0 #dfdfdf;
+}
+
 .win98 .title-bar,
 .win98 .window-body,
 .win98 .status-bar {

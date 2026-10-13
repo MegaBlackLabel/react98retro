@@ -14,6 +14,10 @@ type FileListProps = {
   onSelectionChange: (ids: string[]) => void;
   onNavigate: (id: string) => void;
   viewMode?: ViewMode;
+  /** 項目の右クリック (画面座標つき)。Win98 のコンテキスト メニュー配線用 */
+  onItemContextMenu?: (item: FSNode, position: { x: number; y: number }) => void;
+  /** 余白の右クリック (画面座標つき) */
+  onBackgroundContextMenu?: (position: { x: number; y: number }) => void;
 };
 
 type FileRow = {
@@ -160,12 +164,16 @@ function IconView({
   onSelectionChange,
   onNavigate,
   iconSize,
+  onItemContextMenu,
+  onBackgroundContextMenu,
 }: {
   items: FSNode[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onNavigate: (id: string) => void;
   iconSize: 32 | 16;
+  onItemContextMenu?: (item: FSNode, position: { x: number; y: number }) => void;
+  onBackgroundContextMenu?: (position: { x: number; y: number }) => void;
 }) {
   const handleClick = (id: string, e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -190,6 +198,12 @@ function IconView({
       className={iconSize === 32 ? styles.largeIconsGrid : styles.smallIconsGrid}
       role="list"
       aria-label="ファイル一覧"
+      onContextMenu={(e) => {
+        // 項目側で処理済み (defaultPrevented) なら何もしない
+        if (!onBackgroundContextMenu || e.defaultPrevented) return;
+        e.preventDefault();
+        onBackgroundContextMenu({ x: e.clientX, y: e.clientY });
+      }}
     >
       {items.map((node) => {
         const isSelected = selectedIds.includes(node.id);
@@ -200,6 +214,11 @@ function IconView({
             role="listitem"
             onClick={(e) => handleClick(node.id, e)}
             onDoubleClick={() => handleDoubleClick(node)}
+            onContextMenu={(e) => {
+              if (!onItemContextMenu) return;
+              e.preventDefault();
+              onItemContextMenu(node, { x: e.clientX, y: e.clientY });
+            }}
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -227,11 +246,15 @@ function ListView({
   selectedIds,
   onSelectionChange,
   onNavigate,
+  onItemContextMenu,
+  onBackgroundContextMenu,
 }: {
   items: FSNode[];
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onNavigate: (id: string) => void;
+  onItemContextMenu?: (item: FSNode, position: { x: number; y: number }) => void;
+  onBackgroundContextMenu?: (position: { x: number; y: number }) => void;
 }) {
   const handleClick = (id: string, e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -251,7 +274,16 @@ function ListView({
   };
 
   return (
-    <div className={styles.listView} role="list" aria-label="ファイル一覧">
+    <div
+      className={styles.listView}
+      role="list"
+      aria-label="ファイル一覧"
+      onContextMenu={(e) => {
+        if (!onBackgroundContextMenu || e.defaultPrevented) return;
+        e.preventDefault();
+        onBackgroundContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
       {items.map((node) => {
         const isSelected = selectedIds.includes(node.id);
         return (
@@ -261,6 +293,11 @@ function ListView({
             role="listitem"
             onClick={(e) => handleClick(node.id, e)}
             onDoubleClick={() => handleDoubleClick(node)}
+            onContextMenu={(e) => {
+              if (!onItemContextMenu) return;
+              e.preventDefault();
+              onItemContextMenu(node, { x: e.clientX, y: e.clientY });
+            }}
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -283,7 +320,15 @@ function ListView({
   );
 }
 
-export function FileList({ items, selectedIds, onSelectionChange, onNavigate, viewMode = 'details' }: FileListProps) {
+export function FileList({
+  items,
+  selectedIds,
+  onSelectionChange,
+  onNavigate,
+  viewMode = 'details',
+  onItemContextMenu,
+  onBackgroundContextMenu,
+}: FileListProps) {
   const [sort, setSort] = useState<TableSortState<FileRow>>({
     columnKey: null,
     direction: 'asc',
@@ -317,6 +362,8 @@ export function FileList({ items, selectedIds, onSelectionChange, onNavigate, vi
         selectedIds={selectedIds}
         onSelectionChange={onSelectionChange}
         onNavigate={onNavigate}
+        onItemContextMenu={onItemContextMenu}
+        onBackgroundContextMenu={onBackgroundContextMenu}
         iconSize={32}
       />
     );
@@ -329,6 +376,8 @@ export function FileList({ items, selectedIds, onSelectionChange, onNavigate, vi
         selectedIds={selectedIds}
         onSelectionChange={onSelectionChange}
         onNavigate={onNavigate}
+        onItemContextMenu={onItemContextMenu}
+        onBackgroundContextMenu={onBackgroundContextMenu}
         iconSize={16}
       />
     );
@@ -341,6 +390,8 @@ export function FileList({ items, selectedIds, onSelectionChange, onNavigate, vi
         selectedIds={selectedIds}
         onSelectionChange={onSelectionChange}
         onNavigate={onNavigate}
+        onItemContextMenu={onItemContextMenu}
+        onBackgroundContextMenu={onBackgroundContextMenu}
       />
     );
   }
@@ -356,6 +407,17 @@ export function FileList({ items, selectedIds, onSelectionChange, onNavigate, vi
         if (row._node.type === 'folder' || row._node.type === 'drive') {
           onNavigate(row.id);
         }
+      }}
+      onRowContextMenu={
+        onItemContextMenu
+          ? (row, event) => onItemContextMenu(row._node, { x: event.clientX, y: event.clientY })
+          : undefined
+      }
+      onContextMenu={(e) => {
+        // 行側で処理済みなら余白クリックではない
+        if (!onBackgroundContextMenu || e.defaultPrevented) return;
+        e.preventDefault();
+        onBackgroundContextMenu({ x: e.clientX, y: e.clientY });
       }}
       sort={sort}
       onSortChange={setSort}

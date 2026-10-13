@@ -37,6 +37,8 @@ export type TableViewProps<T extends { id: TableRowId }> = {
   selectedIds?: readonly TableRowId[];
   onSelectionChange?: (ids: string[]) => void;
   onRowDoubleClick?: (row: T) => void;
+  /** 行の右クリック。渡すとブラウザ既定のコンテキスト メニューを抑制する */
+  onRowContextMenu?: (row: T, event: React.MouseEvent<HTMLTableRowElement>) => void;
   sort?: TableSortState<T>;
   onSortChange?: (sort: TableSortState<T>) => void;
   interactive?: boolean;
@@ -50,6 +52,7 @@ function TableViewInner<T extends { id: TableRowId }>(
     selectedIds,
     onSelectionChange,
     onRowDoubleClick,
+    onRowContextMenu,
     sort,
     onSortChange,
     interactive = true,
@@ -193,6 +196,11 @@ function TableViewInner<T extends { id: TableRowId }>(
                 className={clsx({ highlighted: isSelected })}
                 onClick={(event) => handleRowClick(row, event)}
                 onDoubleClick={() => onRowDoubleClick?.(row)}
+                onContextMenu={(event) => {
+                  if (!onRowContextMenu) return;
+                  event.preventDefault();
+                  onRowContextMenu(row, event);
+                }}
               >
                 {columns.map((column) => {
                   const value = row[column.key];

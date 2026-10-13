@@ -1,14 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Window } from '../../components/window/Window';
 import { MenuBar } from '../../components/menu-bar/MenuBar';
 import type { MenuBarMenu } from '../../components/menu-bar/MenuBar';
+import { Menu, type MenuItem } from '../../components/menu/Menu';
 import { Toolbar } from '../../components/toolbar/Toolbar';
 import type { ToolbarItemDef } from '../../components/toolbar/Toolbar';
 import { AddressBar } from '../../components/address-bar/AddressBar';
 import { StatusBar, StatusBarField } from '../../components/window/StatusBar';
 import { FileTree } from './FileTree';
 import { FileList } from './FileList';
-import { useFileSystem, DEFAULT_FS, type ViewMode } from './useFileSystem';
+import { useFileSystem, DEFAULT_FS, type FSNode, type ViewMode } from './useFileSystem';
 import { ICONS } from '../../icons';
 import styles from './FileExplorer.module.css';
 
@@ -321,6 +323,87 @@ export function FileExplorer({
     setViewMode(mode);
   }, []);
 
+  // ── コンテキスト メニュー (Win98: 右クリック) ──
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetId: string | null } | null>(
+    null,
+  );
+
+  // Win98 は右クリックした項目が未選択なら選択してからメニューを出す
+  const handleItemContextMenu = (item: FSNode, position: { x: number; y: number }) => {
+    if (!selectedIds.includes(item.id)) setSelectedIds([item.id]);
+    setContextMenu({ ...position, targetId: item.id });
+  };
+
+  const handleBackgroundContextMenu = (position: { x: number; y: number }) => {
+    setContextMenu({ ...position, targetId: null });
+  };
+
+  // 外側クリック / Escape で閉じる
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest('[data-explorer-context-menu]')) return;
+      setContextMenu(null);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [contextMenu]);
+
+  const contextMenuItems = useMemo<MenuItem[]>(() => {
+    // 項目のメニュー: 開く (フォルダ/ドライブのみ) / 切り取り / コピー / 名前の変更 / 削除
+    if (contextMenu?.targetId != null) {
+      const target = currentChildren.find((child) => child.id === contextMenu.targetId);
+      const isContainer = target?.type === 'folder' || target?.type === 'drive';
+      const items: MenuItem[] = [];
+      if (isContainer) {
+        items.push({ label: '開く', onClick: () => navigate(contextMenu.targetId as string) });
+        items.push({ type: 'separator' });
+      }
+      items.push({ label: '切り取り', onClick: handleCut });
+      items.push({ label: 'コピー', onClick: handleCopy });
+      items.push({ type: 'separator' });
+      items.push({ label: '名前の変更', disabled: !canRename, onClick: handleRename });
+      items.push({ label: '削除', onClick: handleDelete });
+      return items;
+    }
+
+    // 余白のメニュー: 新規作成 (サブメニュー) / 貼り付け / すべて選択
+    return [
+      {
+        label: '新規作成',
+        children: [
+          { label: 'フォルダ', onClick: handleNewFolder },
+          { label: 'ショートカット', disabled: true },
+        ],
+      },
+      { type: 'separator' },
+      { label: '貼り付け', disabled: !hasClipboard, onClick: handlePaste },
+      { type: 'separator' },
+      { label: 'すべて選択', onClick: handleSelectAll },
+    ];
+  }, [
+    contextMenu,
+    currentChildren,
+    canRename,
+    handleCopy,
+    handleCut,
+    handleDelete,
+    handleNewFolder,
+    handlePaste,
+    handleRename,
+    handleSelectAll,
+    hasClipboard,
+    navigate,
+  ]);
+
   const menus = useMemo(() => buildMenus({
     hasSelection: selectedIds.length > 0,
     hasClipboard,
@@ -406,10 +489,24 @@ export function FileExplorer({
               onSelectionChange={setSelectedIds}
               onNavigate={navigate}
               viewMode={viewMode}
+              onItemContextMenu={handleItemContextMenu}
+              onBackgroundContextMenu={handleBackgroundContextMenu}
             />
           </div>
         </div>
       </div>
+      {/* Win98 の右クリック メニュー: ウィンドウの overflow / stacked layer に影響されないよう
+          document.body のポップアップ層に出す */}
+      {contextMenu &&
+        createPortal(
+          <Menu
+            items={contextMenuItems}
+            onClose={() => setContextMenu(null)}
+            data-explorer-context-menu=""
+            style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 100000 }}
+          />,
+          document.body,
+        )}
     </Window>
   );
 }
