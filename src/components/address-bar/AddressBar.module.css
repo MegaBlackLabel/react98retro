@@ -1,4 +1,6 @@
 .addressBar {
+  /* 外枠 (ツールバー帯) なので、ドラッグでラベルが選択されないようにする */
+  user-select: none;
   display: flex;
   flex-direction: row;
   align-items: center;

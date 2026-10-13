@@ -42,6 +42,33 @@
   will-change: transform;
 }
 
+/* ウィンドウの外枠 (タイトルバー・メニュー・ツールバー・ステータスバー) は、
+   ドラッグしても文字が選択されないようにする。実物の Win98 も選択できない
+   (選択が残ると、ウィンドウを動かそうとしたときに選択が伸びるだけで動かない)。 */
+.win98 .title-bar,
+.win98 .status-bar,
+.win98 [role='toolbar'],
+.win98 [role='menubar'],
+.win98 [role='menu'] {
+  user-select: none;
+}
+
+/* ただし外枠の中に置いた入力 (ツールバーに入れる TextBox など) は選択できる。
+   アドレスバーは <select> なので、そもそも文字を選択できない。 */
+.win98 [role='toolbar'] input,
+.win98 [role='toolbar'] textarea,
+.win98 .title-bar input,
+.win98 .status-bar input {
+  user-select: text;
+}
+
+/* 一覧 (テーブル / ツリー) も実物と同じく文字を選択できない。ドラッグは行の選択や
+   スクロールに使うので、文字が選択されて青く伸びると操作の邪魔になる。 */
+.win98 .sunken-panel > table,
+.win98 .tree-view {
+  user-select: none;
+}
+
 /* 実機のステータスバー (22px) に合わせる。実測 (Win98 のウィンドウ右下) は
    上辺が白 1px、その下に面 2px、フィールド 17px (暗 #808080 の上辺 + 明 #ffffff の
    下辺/右辺 = 凹み)、下に面 2px。

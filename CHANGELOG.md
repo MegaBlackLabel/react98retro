@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **ウインドウの外枠と一覧で文字が選択されないようにした**。ドラッグするとツールバーや一覧のテキストが選択されて青く伸び、ウィンドウを動かそうとしても動かない (選択が伸びるだけ) 状態だった。実物の Win98 も外枠と一覧は文字を選択できない。
+  - 対象: タイトルバー / メニューバー / ツールバー / ステータスバー / メニュー / アドレスバー / テーブル / ツリー
+  - ただし外枠の中に置いた入力 (ツールバーに入れる TextBox など) と、`.window-body` の本文は今までどおり選択できる (アドレスバーは `<select>` なので元から文字を選択できない)
+
 ## [0.4.2] - 2026-10-13
 
 ### Fixed
