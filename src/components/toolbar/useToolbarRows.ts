@@ -44,6 +44,11 @@ export function packToolbarRows(
   return rows;
 }
 
+/** 既定の項目幅の測り方。 */
+function measureWidth(element: HTMLElement): number {
+  return element.getBoundingClientRect().width;
+}
+
 /** 段分けが変わったか (計測のたびに描き直さないため)。 */
 function sameRows(
   a: readonly (readonly number[])[] | null,
@@ -66,6 +71,11 @@ export type UseToolbarRowsOptions = {
   paddingX?: number;
   /** 次の項目と離さない項目 (ラベルとコントロールなど)。index ごとの真偽 */
   keepWithNext?: readonly boolean[];
+  /**
+   * 項目の幅の測り方。既定は `element.getBoundingClientRect().width`。
+   * 項目が区切り線を自分の前に持つ場合など、要素の幅に足して詰めたいときに差し替える。
+   */
+  measure?: (element: HTMLElement, index: number) => number;
 };
 
 export type UseToolbarRowsResult = {
@@ -100,6 +110,7 @@ export function useToolbarRows({
   gap = 1,
   paddingX = 0,
   keepWithNext,
+  measure,
 }: UseToolbarRowsOptions): UseToolbarRowsResult {
   const stripRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -110,9 +121,11 @@ export function useToolbarRows({
   const keepWithNextKey = keepWithNext?.join(',') ?? '';
 
   // 計測のたびに作り直さないよう、最新の指定は ref から読む (render 中には触らない)。
-  const latestOptions = useRef({ gap, paddingX, keepWithNext });
+  const latestOptions = useRef({ gap, paddingX, keepWithNext, measure });
   useEffect(() => {
-    latestOptions.current = { gap, paddingX, keepWithNext };
+    latestOptions.current = { gap, paddingX, keepWithNext, measure };
+    // measure は毎レンダー作り直されることが多いので依存に入れない (ref から読む)。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gap, paddingX, keepWithNextKey, keepWithNext]);
 
   useEffect(() => {
@@ -120,12 +133,16 @@ export function useToolbarRows({
       const strip = stripRef.current;
       if (!strip) return;
 
-      const { gap: currentGap, paddingX: currentPaddingX, keepWithNext: currentKeepWithNext } =
-        latestOptions.current;
+      const {
+        gap: currentGap,
+        paddingX: currentPaddingX,
+        keepWithNext: currentKeepWithNext,
+        measure: currentMeasure = measureWidth,
+      } = latestOptions.current;
       const available = strip.getBoundingClientRect().width - currentPaddingX * 2;
       const widths = itemRefs.current
         .slice(0, count)
-        .map((item) => item?.getBoundingClientRect().width ?? 0);
+        .map((item, index) => (item ? currentMeasure(item, index) : 0));
       const packed =
         available > 0 && widths.length > 0 && widths.every((width) => width > 0)
           ? packToolbarRows(widths, available, {

@@ -19,7 +19,7 @@ React で Windows 98 のコンポーネントを実装しました。
 - **Toolbar** — アイコン＋ラベル付きツールバー（SplitButton 対応。`variant="band"` で帯に詰める形になり、`--win98-toolbar-*` で寸法を差し替えられる）
 - **ToolbarBand** — ツールバー帯（ドッキング ツールバー）。外周の溝と、折り返した段の間の溝を持つ
 - **ToolbarRow** — ツールバー 1 段の枠。計測が終わるまで CSS でも折り返し、子を縮めない
-- **useToolbarRows / packToolbarRows** — 帯と項目の幅を測って段に詰める（`keepWithNext` 対応、`ResizeObserver` 無しでも 1 段で動く）
+- **useToolbarRows / packToolbarRows** — 帯と項目の幅を測って段に詰める（`keepWithNext` 対応、`measure` で項目幅の測り方を差し替え、`ResizeObserver` 無しでも 1 段で動く）
 - **Groove** — 2px の凹んだ区切り線（横 = 帯と帯の間 / 縦 = 同じ帯の中の区切り）
 - **AddressBar** — アドレスバー（ドロップダウン履歴付き）
 - **TreeView** — フォルダツリー
@@ -232,6 +232,17 @@ function DockedToolbar({ groups }: { groups: ToolbarItemDef[][] }) {
 - 詰める単位は「項目」です。`keepWithNext` を渡すと、ラベルとコントロールのように離したくない項目を段の末尾に残しません
 - **帯は幅が決まっている箱 (伸びる親・固定幅) に置いてください。** 帯の幅を測って段を決めるので、`display: flex` の行のように内容に合わせて縮む箱に入れると、段が決まる → 帯の幅が変わる → 段が決まる、の循環で 1 段 1 項目まで崩れます
 - 使える幅は「帯の幅 − `paddingX` × 2」です。`paddingX` は**段 (行) 自身が左右に持つ余白**で、既定は `0` (`ToolbarRow` は余白を持たず、左右の 2px は `Toolbar variant="band"` が持ちます)。自前の行に `padding: 0 2px` を付けている場合は `paddingX: 2` を渡してください
+- 項目の幅は既定で `element.getBoundingClientRect().width` です。**項目が区切り線を自分の前に持つ**など、要素の幅に足して詰めたいときは `measure` を渡します
+
+```tsx
+// 区切り線 (8px) を自分の前に持つ項目を、その幅込みで詰める
+useToolbarRows({
+  count: items.length,
+  gap: 4,
+  measure: (element, index) =>
+    element.getBoundingClientRect().width + (items[index].separatorBefore ? 8 : 0),
+});
+```
 - `ToolbarRow` は `flex-wrap: wrap` で、計測が終わるまでは CSS 側でも折り返します。子は `flex: 0 0 auto` で縮めません (縮むと幅を測れず、段分けが決まらないため)
 - `Toolbar` の `variant="band"` は、内容を実物のツールバー ボタンと同じ **22px ちょうど** に詰めます (既定の `plain` は上下 1px の余白付き)
 - `ToolbarBand` は外周の溝 (上辺の外の暗 1px / 上辺の明 1px / 明と暗の間の銀 1px / 下辺の暗 2px) を持ち、折り返した段の間には 銀 1px + 溝 2px + 銀 2px を空けます
