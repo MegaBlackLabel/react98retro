@@ -19,10 +19,12 @@ React で Windows 98 のコンポーネントを実装しました。
 - **Toolbar** — アイコン＋ラベル付きツールバー（SplitButton 対応）
 - **AddressBar** — アドレスバー（ドロップダウン履歴付き）
 - **TreeView** — フォルダツリー
-- **TableView** — 列リサイズ対応ファイル一覧テーブル（行 `id` は `string | number`。内部で文字列に正規化してハイライト判定する）
+- **TableView** — 列リサイズ対応ファイル一覧テーブル（行 `id` は `string | number`。内部で文字列に正規化してハイライト判定する。`onRowContextMenu` で行の右クリックを受け取れる）
 - **Tabs** — タブ。`fill` で親の高さに追従、`panelClassName` でパネルへクラス追加
 - **SplitButton** — アイコン＋▼ボタン＋メニューの複合ボタン
-- **Menu** — ネスト対応コンテキストメニュー
+- **Menu** — ネスト対応コンテキストメニュー（任意の DOM props を転送するので `style` で位置指定できる）
+- **DesktopIcons** — デスクトップのアイコン層（クリックで選択、ダブルクリックで開く、ドラッグ移動＋グリッド吸着。`onSelect` / `onOpen` / `onMove`）
+- **StartMenu** — スタートメニュー（サブメニュー・セパレータ・無効項目対応。タスクバーの `onStartClick` から開く）
 - **Button / CheckBox / Radio / TextBox / TextArea / GroupBox** など、98.css の全 UI コンポーネント
   - `Checkbox` / `OptionButton` / `TextBox` / `TextArea` の `label` は任意。省略すると `label` 要素を描画しないので、
     `<TextBox aria-label="検索" />` のようにアクセシブルネームだけ付けて素の入力として使える（`id` も省略可）
