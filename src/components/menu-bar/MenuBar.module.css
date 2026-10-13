@@ -112,14 +112,9 @@
   margin: 2px 4px;
 }
 
-/* Right-side icon area separator – groove style matching toolbar band divider */
+/* Right-side icon area separator – the 2px groove itself comes from <Groove /> */
 .rightAreaSeparator {
   margin-left: auto;
-  flex-shrink: 0;
-  width: 0;
-  align-self: stretch;
-  border-left: 1px solid #808080;
-  border-right: 1px solid #ffffff;
 }
 
 /* Right-side icon tray with black background */

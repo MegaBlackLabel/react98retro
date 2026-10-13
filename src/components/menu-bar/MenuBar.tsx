@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import styles from './MenuBar.module.css';
+import { Groove } from '../groove/Groove';
 
 export type MenuItemDef =
   | {
@@ -328,7 +329,8 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
       ))}
       {rightIcons && rightIcons.length > 0 && (
         <>
-          <div className={styles.rightAreaSeparator} aria-hidden="true" />
+          {/* 装飾の区切り (Groove が既定で aria-hidden を付ける) */}
+          <Groove orientation="vertical" className={styles.rightAreaSeparator} />
           <div className={styles.rightArea}>
             {rightIcons.map((icon, i) => (
               <img key={i} src={icon} className={styles.rightIcon} alt="" aria-hidden="true" />

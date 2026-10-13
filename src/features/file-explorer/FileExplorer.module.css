@@ -5,13 +5,7 @@
   overflow: hidden;
 }
 
-/* Win98-style sunken groove divider between toolbar bands */
-.groove {
-  height: 0;
-  border-top: 1px solid #808080;
-  border-bottom: 1px solid #ffffff;
-  flex-shrink: 0;
-}
+/* 帯と帯の間の溝はライブラリの <Groove /> が持つ (実測 2px: 上 #808080 / 下 #ffffff) */
 
 .mainContent {
   display: flex;

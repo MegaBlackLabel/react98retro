@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import styles from './Toolbar.module.css';
 import { Menu } from '../menu/Menu';
@@ -40,9 +40,18 @@ export type ToolbarItemDef =
 
 export type ToolbarProps = {
   items: ToolbarItemDef[];
+  /**
+   * `band` はツールバー帯 (ドッキング ツールバー) に詰める形。内容を実物の
+   * ツールバー ボタンと同じ 22px ちょうどにして、上下の 1px を外す。
+   * 帯の中で使うときは `ToolbarBand` と組み合わせる。
+   */
+  variant?: 'plain' | 'band';
 } & React.ComponentPropsWithoutRef<'div'>;
 
-export function Toolbar({ items, className, ...rest }: ToolbarProps) {
+export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
+  { items, variant = 'plain', className, ...rest },
+  forwardedRef,
+) {
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,8 +85,25 @@ export function Toolbar({ items, className, ...rest }: ToolbarProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, [openDropdownId]);
 
+  // 内部の containerRef (ドロップダウンの外側クリック判定) と呼ぶ側の ref を両方に繋ぐ。
+  // forwardRef を使わないと React 18 で ref が届かず、React 19 でも {...rest} が
+  // ref を上書きして containerRef が null のままになる。
+  const setContainerRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      containerRef.current = element;
+      if (typeof forwardedRef === 'function') forwardedRef(element);
+      else if (forwardedRef) forwardedRef.current = element;
+    },
+    [forwardedRef],
+  );
+
   return (
-    <div ref={containerRef} role="toolbar" className={clsx(styles.toolbar, className)} {...rest}>
+    <div
+      ref={setContainerRef}
+      role="toolbar"
+      className={clsx(styles.toolbar, variant === 'band' && styles.band, className)}
+      {...rest}
+    >
       <div className={styles.grip} aria-hidden="true" />
       {items.map((item, i) => {
         if (item.type === 'separator') {
@@ -165,6 +191,6 @@ export function Toolbar({ items, className, ...rest }: ToolbarProps) {
       })}
     </div>
   );
-}
+});
 
 Toolbar.displayName = 'Toolbar';

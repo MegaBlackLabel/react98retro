@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Toolbar } from './Toolbar';
@@ -145,6 +146,28 @@ describe('Toolbar', () => {
       fireEvent.mouseDown(document.body);
       expect(screen.queryByRole('menu')).not.toBeInTheDocument();
       expect(button).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('still closes on an outside click when the caller passes a ref', () => {
+      const ref = createRef<HTMLDivElement>();
+      const items: ToolbarItemDef[] = [
+        {
+          type: 'dropdown',
+          id: 'view',
+          tooltip: 'View',
+          items: [{ label: 'Large Icons' }],
+        },
+      ];
+      render(<Toolbar items={items} ref={ref} />);
+      const button = screen.getByRole('button', { name: 'View' });
+
+      fireEvent.click(button);
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+
+      // 呼ぶ側の ref が内部の containerRef を上書きしていないこと
+      fireEvent.mouseDown(document.body);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+      expect(ref.current).toBe(screen.getByRole('toolbar'));
     });
   });
 
