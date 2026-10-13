@@ -192,6 +192,30 @@ describe('useToolbarRows', () => {
     expect(seen.every(({ count, rows }) => rows.flat().every((index) => index < count))).toBe(true);
   });
 
+  it('uses the measure callback for item widths', () => {
+    const { trigger } = stubResizeObserver();
+    const { result } = renderHook(() =>
+      useToolbarRows({
+        count: 2,
+        gap: 1,
+        // 項目が区切り線を自分の前に持つ場合など、要素の幅に足して詰めたいとき
+        measure: (element) => element.getBoundingClientRect().width + 8,
+      }),
+    );
+
+    act(() => {
+      result.current.stripRef(element(100));
+      result.current.itemRefs.current[0] = element(45);
+      result.current.itemRefs.current[1] = element(45);
+    });
+    act(() => {
+      trigger();
+    });
+
+    // 45 + 8 = 53 ずつ → 53 + 1 + 53 = 107 > 100
+    expect(result.current.rows).toEqual([[0], [1]]);
+  });
+
   it('returns no rows when there are no items', () => {
     const { result } = renderHook(() => useToolbarRows({ count: 0 }));
 

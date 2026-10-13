@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `useToolbarRows` に `measure` オプション。項目が区切り線を自分の前に持つ場合など、要素の幅に足して詰めたいときに測り方を差し替えられる (既定は `getBoundingClientRect().width`)
+
 ## [0.3.0] - 2026-10-13
 
 ### Added
+
+**デスクトップ面**
 
 - `DesktopIcons` コンポーネント: デスクトップのアイコン層。クリックで選択、ダブルクリック / Enter で開く、ドラッグ移動と 75px グリッド吸着 (`onSelect` / `onOpen` / `onMove`)。`role="listbox"` + 各アイコン `role="option"` なので選択状態がスクリーン リーダーに伝わる。
 - `StartMenu` コンポーネント: 左端の縦帯バナー付きスタート メニュー。サブメニュー (150ms ホバー ディレイ)、セパレータ、無効項目、Escape / 矢印キー操作に対応。`ignoreOutsidePressSelector` で、スタート ボタンのような「メニューの外にあるトグル要素」を外側クリック判定から除外できる。
@@ -17,13 +25,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Taskbar` のスタート ボタンに `data-taskbar-start` 属性を付与 (外側クリック除外の目印)。
 - デモにデスクトップ アイコン 3 個 (マイ コンピュータ / マイ ドキュメント / ごみ箱) とスタート メニューを配線。
 
+**ツールバー帯 (ドッキング ツールバー)**
+
+- `ToolbarBand` コンポーネント: ツールバー帯。外周の溝 (上辺の外の暗 1px / 上辺の明 1px / 明と暗の間の銀 1px / 下辺の暗 2px) と、折り返した段の間の 銀 1px + 溝 2px + 銀 2px を持つ。
+- `ToolbarRow` コンポーネント: 1 段の枠。計測が終わるまで CSS でも折り返し、子を `flex: 0 0 auto` で縮めない (縮むと幅を測れず段分けが決まらない)。
+- `useToolbarRows` / `packToolbarRows`: 帯と項目の幅を測って段に詰める。`keepWithNext` (ラベルとコントロールを離さない) 対応、`ResizeObserver` が無い環境 (SSR など) では計測せず 1 段のまま動く。項目数が変わった描画では存在しない index を返さない。
+- `Toolbar` の `variant="band"`: 内容を実物のツールバー ボタンと同じ 22px ちょうどに詰める。
+- `Groove` コンポーネント: 2px の凹んだ区切り (横 = 帯と帯の間 / 縦 = 同じ帯の中の区切り)。既定で `aria-hidden` (装飾)。
+- CSS 変数: `--win98-toolbar-separator-height` / `--win98-toolbar-content-height` / `--win98-toolbar-gap` / `--win98-groove-dark` / `--win98-groove-light`。
+
 ### Changed
 
 - `@types/node` 26.6.4 → 26.6.5。
 
 ### Fixed
 
+- ツールバーの区切り線の高さを 16px → 18px。16px は「ボタン 22px の上下 3px 内側」という導出値で、Win98 実物のヘルプ画像 (`TOOLBAR.PNG` 559×49) を 1px 単位で測ると、区切り線 6 本すべて y=5..22 の 18px (22px ボタンの上下 2px 内側) だった。
 - スタート ボタンが「開くだけ」になっていた問題。メニュー表示中にボタンを押すと、外側クリック判定で閉じた直後の click が再度開いてしまっていた。
+- `Toolbar` / `ToolbarBand` を `forwardRef` に。呼ぶ側の ref が内部 ref を上書きしてドロップダウンの外側クリック判定が効かなくなる問題と、React 18 で ref が届かない問題。
+- 帯の区切り (`Groove`) が読み上げに混ざっていた問題 (既定で `aria-hidden`)。
 - Firefox など `::-webkit-scrollbar` が効かないブラウザでネイティブ スクロールバーになるのを避け、`scrollbar-color` で Win98 の 3D スクロールバーに寄せた。
 
 ## [0.2.6] - 2026-10-13
