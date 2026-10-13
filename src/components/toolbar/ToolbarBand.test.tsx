@@ -18,7 +18,8 @@ describe('ToolbarBand', () => {
   it('puts a groove between wrapped rows', () => {
     render(<ToolbarBand rows={rows(3)} />);
 
-    expect(screen.getAllByRole('separator')).toHaveLength(2);
+    // 段の区切りは装飾 (aria-hidden) なので、hidden も含めて数える
+    expect(screen.queryAllByRole('separator', { hidden: true })).toHaveLength(2);
   });
 
   it('keeps rows and grooves in order', () => {

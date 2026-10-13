@@ -17,6 +17,18 @@ describe('Groove', () => {
     expect(screen.getByTestId('groove')).toHaveAttribute('aria-orientation', 'vertical');
   });
 
+  it('is decorative by default so it is not announced', () => {
+    render(<Groove data-testid="groove" />);
+
+    expect(screen.getByTestId('groove')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('lets the caller override aria-hidden', () => {
+    render(<Groove data-testid="groove" aria-hidden={undefined} />);
+
+    expect(screen.getByTestId('groove')).not.toHaveAttribute('aria-hidden');
+  });
+
   it('forwards arbitrary DOM props', () => {
     render(<Groove data-testid="groove" className="extra" style={{ marginTop: 2 }} />);
 

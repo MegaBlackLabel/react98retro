@@ -26,6 +26,9 @@ export function Groove({ orientation = 'horizontal', className, ...rest }: Groov
     <div
       role="separator"
       aria-orientation={orientation}
+      // 帯の区切りは装飾なので、既定では読み上げに出さない。
+      // 意味のある区切りとして出したいときは aria-hidden={undefined} を渡す。
+      aria-hidden="true"
       className={clsx(orientation === 'vertical' ? styles.vertical : styles.horizontal, className)}
       {...rest}
     />

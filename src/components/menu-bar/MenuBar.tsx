@@ -329,6 +329,7 @@ export function MenuBar({ menus, rightIcons, className, ...rest }: MenuBarProps)
       ))}
       {rightIcons && rightIcons.length > 0 && (
         <>
+          {/* 装飾の区切り (Groove が既定で aria-hidden を付ける) */}
           <Groove orientation="vertical" className={styles.rightAreaSeparator} />
           <div className={styles.rightArea}>
             {rightIcons.map((icon, i) => (

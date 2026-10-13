@@ -10,16 +10,21 @@ function element(width: number): HTMLElement {
 /** ResizeObserver を差し替えて、監視のコールバックを手で叩けるようにする。 */
 function stubResizeObserver() {
   const callbacks: Array<() => void> = [];
+  const observed: Element[] = [];
   class FakeResizeObserver {
     constructor(callback: () => void) {
       callbacks.push(callback);
     }
-    observe() {}
+    observe(element: Element) {
+      observed.push(element);
+    }
     unobserve() {}
-    disconnect() {}
+    disconnect() {
+      observed.length = 0;
+    }
   }
   vi.stubGlobal('ResizeObserver', FakeResizeObserver);
-  return { trigger: () => callbacks.forEach((callback) => callback()) };
+  return { trigger: () => callbacks.forEach((callback) => callback()), observed };
 }
 
 describe('packToolbarRows', () => {
@@ -120,5 +125,106 @@ describe('useToolbarRows', () => {
     });
 
     expect(result.current.rows).toEqual([[0, 1]]);
+  });
+
+  it('reserves no horizontal padding by default', () => {
+    const { trigger } = stubResizeObserver();
+    const { result } = renderHook(() => useToolbarRows({ count: 2, gap: 1 }));
+
+    act(() => {
+      result.current.stripRef(element(197));
+      result.current.itemRefs.current[0] = element(98);
+      result.current.itemRefs.current[1] = element(98);
+    });
+    act(() => {
+      trigger();
+    });
+
+    // 98 + 1 + 98 = 197 がちょうど入る
+    expect(result.current.rows).toEqual([[0, 1]]);
+  });
+
+  it('reserves the given horizontal padding', () => {
+    const { trigger } = stubResizeObserver();
+    const { result } = renderHook(() => useToolbarRows({ count: 2, gap: 1, paddingX: 2 }));
+
+    act(() => {
+      result.current.stripRef(element(197));
+      result.current.itemRefs.current[0] = element(98);
+      result.current.itemRefs.current[1] = element(98);
+    });
+    act(() => {
+      trigger();
+    });
+
+    // 使える幅は 197 - 4 = 193
+    expect(result.current.rows).toEqual([[0], [1]]);
+  });
+
+  it('never hands out indexes of items that no longer exist', () => {
+    const { trigger } = stubResizeObserver();
+    const seen: Array<{ count: number; rows: number[][] }> = [];
+    const { result, rerender } = renderHook(
+      ({ count }) => {
+        const api = useToolbarRows({ count, gap: 2 });
+        seen.push({ count, rows: api.rows });
+        return api;
+      },
+      { initialProps: { count: 3 } },
+    );
+
+    act(() => {
+      result.current.stripRef(element(94));
+      result.current.itemRefs.current[0] = element(40);
+      result.current.itemRefs.current[1] = element(40);
+      result.current.itemRefs.current[2] = element(40);
+    });
+    act(() => {
+      trigger();
+    });
+    expect(result.current.rows).toEqual([[0, 1], [2]]);
+
+    // 項目が減った描画 (計測が追いつく前) にも、存在しない index を渡さない
+    act(() => {
+      rerender({ count: 2 });
+    });
+
+    expect(seen.every(({ count, rows }) => rows.flat().every((index) => index < count))).toBe(true);
+  });
+
+  it('returns no rows when there are no items', () => {
+    const { result } = renderHook(() => useToolbarRows({ count: 0 }));
+
+    expect(result.current.rows).toEqual([]);
+  });
+
+  it('observes the current items again after a repack', () => {
+    const { trigger, observed } = stubResizeObserver();
+    const { result } = renderHook(() => useToolbarRows({ count: 3, gap: 2 }));
+
+    act(() => {
+      result.current.stripRef(element(94));
+      result.current.itemRefs.current[0] = element(40);
+      result.current.itemRefs.current[1] = element(40);
+      result.current.itemRefs.current[2] = element(40);
+    });
+    act(() => {
+      trigger();
+    });
+    expect(result.current.rows).toEqual([[0, 1], [2]]);
+
+    // 詰め直しで項目の DOM ノードが入れ替わる
+    const fresh = [element(40), element(40), element(40)];
+    act(() => {
+      result.current.stripRef(element(300));
+      fresh.forEach((item, index) => {
+        result.current.itemRefs.current[index] = item;
+      });
+      trigger();
+    });
+
+    expect(result.current.rows).toEqual([[0, 1, 2]]);
+    expect(observed).toContain(fresh[0]);
+    expect(observed).toContain(fresh[2]);
   });
 });

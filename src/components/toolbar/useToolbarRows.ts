@@ -62,7 +62,7 @@ export type UseToolbarRowsOptions = {
   count: number;
   /** 段の中の項目の間隔 (px)。既定 1 (`--win98-toolbar-gap` と同じ) */
   gap?: number;
-  /** 帯の左右の余白 (px)。使える幅から差し引く。既定 2 */
+  /** 段 (帯) 自身が左右に持つ余白 (px)。使える幅から差し引く。既定 0 (`ToolbarRow` は余白を持たない) */
   paddingX?: number;
   /** 次の項目と離さない項目 (ラベルとコントロールなど)。index ごとの真偽 */
   keepWithNext?: readonly boolean[];
@@ -98,12 +98,14 @@ export type UseToolbarRowsResult = {
 export function useToolbarRows({
   count,
   gap = 1,
-  paddingX = 2,
+  paddingX = 0,
   keepWithNext,
 }: UseToolbarRowsOptions): UseToolbarRowsResult {
   const stripRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
-  const [measured, setMeasured] = useState<number[][] | null>(null);
+  // 計測した段分けは、測ったときの項目数と一緒に持つ。項目数が変わった描画では
+  // 前の段分けを返さない (存在しない index を呼ぶ側に渡さないため)。
+  const [measured, setMeasured] = useState<{ count: number; rows: number[][] } | null>(null);
 
   const keepWithNextKey = keepWithNext?.join(',') ?? '';
 
@@ -132,7 +134,13 @@ export function useToolbarRows({
             })
           : null;
 
-      setMeasured((current) => (sameRows(current, packed) ? current : packed));
+      setMeasured((current) => {
+        if (packed === null) return current === null ? current : null;
+        if (current !== null && current.count === count && sameRows(current.rows, packed)) {
+          return current;
+        }
+        return { count, rows: packed };
+      });
     };
 
     update();
@@ -146,14 +154,22 @@ export function useToolbarRows({
       if (item) observer.observe(item);
     }
     return () => observer.disconnect();
-  }, [count, gap, paddingX, keepWithNextKey]);
+    // measured を依存に入れて、詰め直しの後 (項目の DOM ノードが入れ替わった後) に
+    // 監視対象を貼り直す。sameRows で収束するので描き直しは増えない。
+  }, [count, gap, paddingX, keepWithNextKey, measured]);
 
   const setStrip = useCallback((element: HTMLElement | null) => {
     stripRef.current = element;
   }, []);
 
-  // 段分けがまだ分からないときは 1 段で描く (CSS 側も折り返しできるようにしてある)。
-  const rows = measured ?? [Array.from({ length: count }, (_, index) => index)];
+  // 段分けがまだ分からないとき (初回・項目数が変わった直後・計測できないとき) は
+  // 1 段で描く (CSS 側も折り返しできるようにしてある)。
+  const rows =
+    measured !== null && measured.count === count
+      ? measured.rows
+      : count === 0
+        ? []
+        : [Array.from({ length: count }, (_, index) => index)];
 
   return { stripRef: setStrip, itemRefs, rows };
 }

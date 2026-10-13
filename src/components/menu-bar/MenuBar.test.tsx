@@ -184,6 +184,15 @@ describe('MenuBar', () => {
     expect(underline).toHaveTextContent('F');
   });
 
+  it('keeps the right-area divider decorative', () => {
+    const { container } = render(
+      <MenuBar menus={SAMPLE_MENUS} rightIcons={['https://example.com/a.png']} />
+    );
+
+    const divider = container.querySelector('[aria-orientation="vertical"]');
+    expect(divider).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('renders rightIcons as decorative img elements', () => {
     const { container } = render(
       <MenuBar
