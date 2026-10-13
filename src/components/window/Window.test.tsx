@@ -118,6 +118,24 @@ describe('Window', () => {
     expect(screen.getByText('Status content')).toBeInTheDocument();
   });
 
+  it('shows the size grip only when a status bar is present', () => {
+    // 実物のグリップはステータスバーの右端に描かれるので、ステータスバーが無い
+    // ウィンドウには出さない (リサイズ自体は不可視のハンドルでできる)。
+    const { container: withoutStatusBar } = render(
+      <Window title="Test">
+        <p>Body</p>
+      </Window>,
+    );
+    expect(withoutStatusBar.querySelector(`.${styles.sizeGrip}`)).toBeNull();
+
+    const { container: withStatusBar } = render(
+      <Window title="Test" statusBar={<div>Status content</div>}>
+        <p>Body</p>
+      </Window>,
+    );
+    expect(withStatusBar.querySelector(`.${styles.sizeGrip}`)).not.toBeNull();
+  });
+
   it('hides status bar when minimized', () => {
     render(
       <Window title="Test" minimized statusBar={<div>Status content</div>}>
@@ -1370,7 +1388,10 @@ describe('Window', () => {
       });
 
       const backgroundWindow = screen.getByText('Background A').closest('.window') as HTMLElement;
-      const resizeGrip = backgroundWindow.querySelector(`.${styles.sizeGrip}`) as HTMLElement;
+      // 見えるグリップはステータスバーがある窓にしか出ないので、不可視の se ハンドルで押す。
+      const resizeGrip = backgroundWindow.querySelector(
+        `.${styles.resizeHandle}.${styles.se}`,
+      ) as HTMLElement;
       resizeGrip.setPointerCapture = vi.fn();
       resizeGrip.releasePointerCapture = vi.fn();
 

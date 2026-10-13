@@ -13,13 +13,16 @@
 .sw { bottom: -3px; left: -3px;   width: 10px;  height: 10px; cursor: sw-resize; }
 .nw { top: -3px;    left: -3px;   width: 10px;  height: 10px; cursor: nw-resize; }
 
-/* Visual size grip with 3 diagonal raised lines, clipped to triangle */
+/* Visual size grip with 3 diagonal raised lines, clipped to triangle.
+   実測 (Win98 のウィンドウ右下) は「1px の白 + 2px の #808080」を 4px ピッチで 45°に
+   3 本。以前は灰が 1px で、段の半分の太さだった。 */
 .sizeGrip {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 13px;
-  height: 13px;
+  /* 実測: ステータスバー (19px) の中で、右端から 3px / 下端から 3px、12x12。 */
+  bottom: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
   cursor: se-resize;
   z-index: 11;
   touch-action: none;
@@ -28,20 +31,20 @@
     linear-gradient(135deg,
       transparent calc(100% - 4px),
       #ffffff calc(100% - 4px), #ffffff calc(100% - 3px),
-      #808080 calc(100% - 3px), #808080 calc(100% - 2px),
-      transparent calc(100% - 2px)
+      #808080 calc(100% - 3px), #808080 calc(100% - 1px),
+      transparent calc(100% - 1px)
     ),
     linear-gradient(135deg,
       transparent calc(100% - 8px),
       #ffffff calc(100% - 8px), #ffffff calc(100% - 7px),
-      #808080 calc(100% - 7px), #808080 calc(100% - 6px),
-      transparent calc(100% - 6px)
+      #808080 calc(100% - 7px), #808080 calc(100% - 5px),
+      transparent calc(100% - 5px)
     ),
     linear-gradient(135deg,
       transparent calc(100% - 12px),
       #ffffff calc(100% - 12px), #ffffff calc(100% - 11px),
-      #808080 calc(100% - 11px), #808080 calc(100% - 10px),
-    transparent calc(100% - 10px)
+      #808080 calc(100% - 11px), #808080 calc(100% - 9px),
+    transparent calc(100% - 9px)
     );
 }
 
