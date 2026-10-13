@@ -464,7 +464,7 @@ export function Window({
             {children}
           </div>
           {statusBar}
-          {!isMaximized && (() => {
+          {statusBar && !isMaximized && (() => {
             const { style: seStyle, onPointerDown } = getResizeHandleProps('se');
             const handlePointerDown = (event: React.PointerEvent) => {
               if (effectiveWindowId && restoreShrink && preShrinkGeometries?.[effectiveWindowId]) {
