@@ -42,8 +42,19 @@
   will-change: transform;
 }
 
-/* 実機のステータスバー (19〜20px) に合わせて固定する (フォント差でぶれないように) */
-.win98 .status-bar-field {
-  height: 20px;
+/* 実機のステータスバー (22px) に合わせる。実測 (Win98 のウィンドウ右下) は
+   上辺が白 1px、その下に面 2px、フィールド 17px (暗 #808080 の上辺 + 明 #ffffff の
+   下辺/右辺 = 凹み)、下に面 2px。
+   98.css の既定はフィールド 20px / 明ベベル #dfdfdf なので、色と高さを実測に寄せる。 */
+.win98 .status-bar {
+  height: 22px;
+  padding: 2px 0;
+  border-top: 1px solid #ffffff;
   box-sizing: border-box;
+}
+
+.win98 .status-bar-field {
+  height: 17px;
+  box-sizing: border-box;
+  box-shadow: inset -1px -1px #ffffff, inset 1px 1px #808080;
 }
