@@ -17,6 +17,12 @@ export type StartMenuProps = {
   bannerText?: string;
   /** パネル幅 (既定 200) */
   width?: number;
+  /**
+   * 外側クリック判定から除外する要素のセレクタ。
+   * スタート ボタンのように「メニューの外にあるが開閉トグルを持つ」要素を指定する。
+   * 指定しないと、ボタンの mousedown で閉じた直後の click が再度開いてしまう。
+   */
+  ignoreOutsidePressSelector?: string;
 } & ComponentPropsWithoutRef<'div'>;
 
 /** サブメニューを開くまでのディレイ(ms) */
@@ -132,6 +138,7 @@ export function StartMenu({
   onClose,
   bannerText = 'Windows 98',
   width = 200,
+  ignoreOutsidePressSelector,
   className,
   style,
   ...rest
@@ -145,16 +152,18 @@ export function StartMenu({
     rootRef.current?.focus();
   }, []);
 
-  // 外側クリックで閉じる
+  // 外側クリックで閉じる (ignoreOutsidePressSelector に一致する要素は除外)
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (ignoreOutsidePressSelector && target?.closest(ignoreOutsidePressSelector)) return;
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         onClose?.();
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [onClose]);
+  }, [onClose, ignoreOutsidePressSelector]);
 
   // 区切りを除いた移動可能な項目
   const navigable = items

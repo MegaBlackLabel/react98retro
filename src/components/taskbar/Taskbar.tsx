@@ -88,7 +88,13 @@ export function Taskbar({
 
   return (
     <div role="toolbar" aria-label="タスクバー" className={clsx(styles.taskbar, className)} {...rest}>
-      <button type="button" className={styles.start} aria-label="スタート" onClick={onStartClick}>
+      <button
+        type="button"
+        className={styles.start}
+        aria-label="スタート"
+        data-taskbar-start=""
+        onClick={onStartClick}
+      >
         <Icon name="windowsLogo" size={16} />
         <span>スタート</span>
       </button>

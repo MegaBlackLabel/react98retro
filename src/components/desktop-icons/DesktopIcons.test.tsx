@@ -29,17 +29,25 @@ describe('DesktopIcons', () => {
     expect(screen.getByLabelText('デスクトップ')).toBeInTheDocument();
   });
 
+  it('exposes the surface as a listbox whose icons are options', () => {
+    render(<DesktopIcons items={items} />);
+
+    const listbox = screen.getByRole('listbox', { name: 'デスクトップ' });
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(items.length);
+  });
+
   it('calls onSelect with the icon id on click', () => {
     const onSelect = vi.fn();
     render(<DesktopIcons items={items} onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole('button', { name: 'ゴミ箱' }));
+    fireEvent.click(screen.getByRole('option', { name: 'ゴミ箱' }));
     expect(onSelect).toHaveBeenCalledWith('bin');
   });
 
   it('calls onOpen with the icon id on double click', () => {
     const onOpen = vi.fn();
     render(<DesktopIcons items={items} onOpen={onOpen} />);
-    fireEvent.doubleClick(screen.getByRole('button', { name: 'マイ コンピュータ' }));
+    fireEvent.doubleClick(screen.getByRole('option', { name: 'マイ コンピュータ' }));
     expect(onOpen).toHaveBeenCalledWith('computer');
   });
 
@@ -52,10 +60,10 @@ describe('DesktopIcons', () => {
 
   it('marks the selected icon with aria-selected and data-selected', () => {
     render(<DesktopIcons items={items} selectedId="docs" />);
-    const selected = screen.getByRole('button', { name: 'マイ ドキュメント' });
+    const selected = screen.getByRole('option', { name: 'マイ ドキュメント' });
     expect(selected).toHaveAttribute('aria-selected', 'true');
     expect(selected).toHaveAttribute('data-selected');
-    expect(screen.getByRole('button', { name: 'ゴミ箱' })).toHaveAttribute(
+    expect(screen.getByRole('option', { name: 'ゴミ箱' })).toHaveAttribute(
       'aria-selected',
       'false',
     );
@@ -64,7 +72,7 @@ describe('DesktopIcons', () => {
   it('snaps the dragged icon to the grid on pointer up', () => {
     const onMove = vi.fn();
     render(<DesktopIcons items={items} onMove={onMove} gridSize={75} />);
-    drag(screen.getByRole('button', { name: 'マイ コンピュータ' }), 80, 10);
+    drag(screen.getByRole('option', { name: 'マイ コンピュータ' }), 80, 10);
     expect(onMove).toHaveBeenCalledTimes(1);
     const [id, position] = onMove.mock.calls[0] as [string, { x: number; y: number }];
     expect(id).toBe('computer');
@@ -76,7 +84,7 @@ describe('DesktopIcons', () => {
   it('does not start a drag below the 8px threshold', () => {
     const onMove = vi.fn();
     render(<DesktopIcons items={items} onMove={onMove} gridSize={75} />);
-    drag(screen.getByRole('button', { name: 'マイ コンピュータ' }), 4, 4);
+    drag(screen.getByRole('option', { name: 'マイ コンピュータ' }), 4, 4);
     expect(onMove).not.toHaveBeenCalled();
   });
 
@@ -84,7 +92,7 @@ describe('DesktopIcons', () => {
     const onSelect = vi.fn();
     const onOpen = vi.fn();
     render(<DesktopIcons items={items} onSelect={onSelect} onOpen={onOpen} gridSize={75} />);
-    const icon = screen.getByRole('button', { name: 'マイ コンピュータ' });
+    const icon = screen.getByRole('option', { name: 'マイ コンピュータ' });
     drag(icon, 80, 0);
     fireEvent.click(icon);
     fireEvent.doubleClick(icon);

@@ -143,6 +143,7 @@ function App() {
         <StartMenu
           items={startMenuItems}
           onClose={() => setStartMenuOpen(false)}
+          ignoreOutsidePressSelector="[data-taskbar-start]"
           style={{ position: 'fixed', left: 2, bottom: 30, zIndex: 100001 }}
         />
       )}

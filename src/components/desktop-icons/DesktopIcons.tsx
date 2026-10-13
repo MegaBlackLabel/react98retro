@@ -118,6 +118,7 @@ export function DesktopIcons({
 
   return (
     <div
+      role="listbox"
       aria-label="デスクトップ"
       className={clsx(styles.root, className)}
       onClick={(event) => {
@@ -137,7 +138,7 @@ export function DesktopIcons({
         return (
           <div
             key={item.id}
-            role="button"
+            role="option"
             tabIndex={0}
             aria-selected={isSelected}
             data-selected={isSelected ? 'true' : undefined}

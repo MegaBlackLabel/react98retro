@@ -38,6 +38,25 @@ describe('StartMenu', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the menu open when the press lands on an ignored element', () => {
+    const onClose = vi.fn();
+
+    render(
+      <>
+        <button type="button" aria-label="スタート">
+          スタート
+        </button>
+        <StartMenu items={basicItems} onClose={onClose} ignoreOutsidePressSelector='[aria-label="スタート"]' />
+      </>,
+    );
+
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'スタート' }));
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(document.body);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('does not call onClick or onClose for a disabled item', () => {
     const onClick = vi.fn();
     const onClose = vi.fn();
