@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, forwardRef } from 'react';
 import clsx from 'clsx';
 import { Groove } from '../groove/Groove';
 import styles from './Toolbar.module.css';
@@ -9,7 +9,7 @@ export type ToolbarBandProps = {
    * 折り返しの判断は呼ぶ側が持つ (実測値の段詰めと同じで、幅を測って詰め直さない)。
    */
   rows: React.ReactNode[];
-} & React.ComponentPropsWithRef<'div'>;
+} & React.ComponentPropsWithoutRef<'div'>;
 
 /**
  * ツールバー帯 (Win98 のドッキング ツールバー) 。
@@ -21,9 +21,12 @@ export type ToolbarBandProps = {
  *
  * 段の中身は呼ぶ側が作る (ライブラリの `Toolbar` でも、グループ分けした独自の行でもよい)。
  */
-export function ToolbarBand({ rows, className, ...rest }: ToolbarBandProps) {
+export const ToolbarBand = forwardRef<HTMLDivElement, ToolbarBandProps>(function ToolbarBand(
+  { rows, className, ...rest },
+  ref,
+) {
   return (
-    <div className={clsx(styles.bandContainer, className)} {...rest}>
+    <div ref={ref} className={clsx(styles.bandContainer, className)} {...rest}>
       {rows.map((row, index) => (
         <Fragment key={index}>
           {index > 0 && <Groove className={styles.bandRowGroove} />}
@@ -32,4 +35,6 @@ export function ToolbarBand({ rows, className, ...rest }: ToolbarBandProps) {
       ))}
     </div>
   );
-}
+});
+
+ToolbarBand.displayName = 'ToolbarBand';

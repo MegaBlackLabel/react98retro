@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import styles from './Toolbar.module.css';
 import { Menu } from '../menu/Menu';
@@ -46,9 +46,12 @@ export type ToolbarProps = {
    * 帯の中で使うときは `ToolbarBand` と組み合わせる。
    */
   variant?: 'plain' | 'band';
-} & React.ComponentPropsWithRef<'div'>;
+} & React.ComponentPropsWithoutRef<'div'>;
 
-export function Toolbar({ items, variant = 'plain', className, ...rest }: ToolbarProps) {
+export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
+  { items, variant = 'plain', className, ...rest },
+  forwardedRef,
+) {
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,9 +85,21 @@ export function Toolbar({ items, variant = 'plain', className, ...rest }: Toolba
     return () => document.removeEventListener('mousedown', handler);
   }, [openDropdownId]);
 
+  // 内部の containerRef (ドロップダウンの外側クリック判定) と呼ぶ側の ref を両方に繋ぐ。
+  // forwardRef を使わないと React 18 で ref が届かず、React 19 でも {...rest} が
+  // ref を上書きして containerRef が null のままになる。
+  const setContainerRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      containerRef.current = element;
+      if (typeof forwardedRef === 'function') forwardedRef(element);
+      else if (forwardedRef) forwardedRef.current = element;
+    },
+    [forwardedRef],
+  );
+
   return (
     <div
-      ref={containerRef}
+      ref={setContainerRef}
       role="toolbar"
       className={clsx(styles.toolbar, variant === 'band' && styles.band, className)}
       {...rest}
@@ -176,6 +191,6 @@ export function Toolbar({ items, variant = 'plain', className, ...rest }: Toolba
       })}
     </div>
   );
-}
+});
 
 Toolbar.displayName = 'Toolbar';
