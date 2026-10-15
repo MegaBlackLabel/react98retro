@@ -42,11 +42,13 @@ function rowTopAt(
  * ポインタ位置から、ドラッグ中の項目の挿入位置 (結果の配列での index) を出す。
  *
  * 段 (行) をまたぐかどうかは `allowCrossRow` で決める:
- * - 既定 (フェーズ 1): 掴んだ項目と同じ段にある、動かせる項目だけを数える
- * - `allowCrossRow: true` (フェーズ 2): ポインタの y が入っている段を対象にする
+ * - 既定 (フェーズ 1): 掴んだ項目と同じ段が対象
+ * - `allowCrossRow: true` (フェーズ 2): ポインタの y が入っている段が対象
  *
- * 数え方は「対象の段の、自分以外で中心がポインタより左にある項目の数」= 挿入スロット。
- * 動かせない項目 (`movable[index] === false`) は掴めないし、挿入先にもならない。
+ * 挿入位置は「対象の段で、中心がポインタより右にある最初の項目の手前」。段の
+ * **全項目**で見るので、動かせない項目 (`movable[index] === false`) も挿入で押し出される
+ * (掴めないだけで、位置は動く。実物の rebar の `RBBS_NOGRIPPER` と同じ)。
+ * `movable` は掴めるかどうか (`useToolbarReorder` の `canReorder`) にだけ効く。
  */
 export function resolveToolbarDropIndex(
   pointer: ToolbarReorderPointer,

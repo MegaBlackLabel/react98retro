@@ -50,7 +50,7 @@ export type ToolbarProps = {
    * 左端のグリップに付ける props。`useToolbarReorder` の `getHandleProps(index)` を
    * 渡すと、そこを掴んで並べ替えられるようになる (既定は装飾のみ)。
    */
-  gripProps?: React.ComponentPropsWithoutRef<'div'>;
+  gripProps?: React.ComponentPropsWithoutRef<'div'> & { [key: `data-${string}`]: string | undefined };
   /**
    * 左端のグリップ (つまみ) を出すか。実物の rebar では、グリップが無いバンドは
    * 掴めないので並べ替えできない (`RBBS_NOGRIPPER`)。既定 true。
