@@ -2,6 +2,7 @@ import { createRef } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Toolbar } from './Toolbar';
+import styles from './Toolbar.module.css';
 import type { ToolbarItemDef } from './Toolbar';
 
 const sampleItems: ToolbarItemDef[] = [
@@ -225,4 +226,32 @@ describe('Toolbar', () => {
     });
   });
 
+
+  describe('grip', () => {
+    it('renders the grip by default', () => {
+      const { container } = render(<Toolbar items={sampleItems} />);
+      expect(container.querySelector(`.${styles.grip}`)).not.toBeNull();
+    });
+
+    it('does not render the grip when grip is false (RBBS_NOGRIPPER)', () => {
+      const { container } = render(<Toolbar items={sampleItems} grip={false} />);
+      expect(container.querySelector(`.${styles.grip}`)).toBeNull();
+    });
+
+    it('attaches gripProps to the grip and lets it take a pointerdown', () => {
+      const onPointerDown = vi.fn();
+      const { container } = render(
+        <Toolbar
+          items={sampleItems}
+          gripProps={{ 'data-reorder-handle': '', onPointerDown }}
+        />,
+      );
+      const grip = container.querySelector(`.${styles.grip}`) as HTMLElement;
+      expect(grip).not.toBeNull();
+      expect(grip).toHaveAttribute('data-reorder-handle');
+
+      fireEvent.pointerDown(grip, { pointerId: 1 });
+      expect(onPointerDown).toHaveBeenCalledTimes(1);
+    });
+  });
 });

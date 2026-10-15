@@ -5,6 +5,12 @@ export type { ToolbarBandProps } from './ToolbarBand';
 export { ToolbarRow } from './ToolbarRow';
 export type { ToolbarRowProps } from './ToolbarRow';
 export { packToolbarRows, useToolbarRows } from './useToolbarRows';
+export { resolveToolbarDropIndex, useToolbarReorder } from './useToolbarReorder';
+export type {
+  ToolbarItemRect,
+  UseToolbarReorderOptions,
+  UseToolbarReorderResult,
+} from './useToolbarReorder';
 export type {
   PackToolbarRowsOptions,
   UseToolbarRowsOptions,

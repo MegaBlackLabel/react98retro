@@ -46,10 +46,20 @@ export type ToolbarProps = {
    * 帯の中で使うときは `ToolbarBand` と組み合わせる。
    */
   variant?: 'plain' | 'band';
-} & React.ComponentPropsWithoutRef<'div'>;
+  /**
+   * 左端のグリップに付ける props。`useToolbarReorder` の `getHandleProps(index)` を
+   * 渡すと、そこを掴んで並べ替えられるようになる (既定は装飾のみ)。
+   */
+  gripProps?: React.ComponentPropsWithoutRef<'div'> & { [key: `data-${string}`]: string | undefined };
+  /**
+   * 左端のグリップ (つまみ) を出すか。実物の rebar では、グリップが無いバンドは
+   * 掴めないので並べ替えできない (`RBBS_NOGRIPPER`)。既定 true。
+   */
+  grip?: boolean;
+} & React.ComponentPropsWithRef<'div'>;
 
 export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
-  { items, variant = 'plain', className, ...rest },
+  { items, variant = 'plain', gripProps, grip = true, className, ...rest },
   forwardedRef,
 ) {
   const [tooltipId, setTooltipId] = useState<string | null>(null);
@@ -104,7 +114,13 @@ export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar
       className={clsx(styles.toolbar, variant === 'band' && styles.band, className)}
       {...rest}
     >
-      <div className={styles.grip} aria-hidden="true" />
+      {grip && (
+        <div
+          className={clsx(styles.grip, gripProps && styles.gripDraggable)}
+          aria-hidden="true"
+          {...gripProps}
+        />
+      )}
       {items.map((item, i) => {
         if (item.type === 'separator') {
           return <div key={i} className={styles.separator} role="separator" />;

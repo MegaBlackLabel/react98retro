@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **ツールバーの並べ替え**: 項目 (グループ) の左端のグリップをドラッグして順序を入れ替えられるようにした。
+  - `resolveToolbarDropIndex(pointer, rects, fromIndex, { allowCrossRow })` — 挿入位置を出す純関数。既定は同じ段の中だけ、`allowCrossRow: true` で別の段へも移動できる。挿入位置は段の全項目の見た目の位置で決め、返す index は「from を取り除いた後の配列」での位置 (呼ぶ側は `next.splice(to, 0, next.splice(from, 1)[0])`)
+  - `useToolbarReorder({ count, movable?, allowCrossRow?, itemRefs?, onReorder })` — ポインタ追跡・挿入位置・`canReorder(index)`。順序は呼ぶ側が持つ (controlled)
+  - `Toolbar` の `grip` / `gripProps` — `grip={false}` でグリップを消し、`gripProps={getHandleProps(i)}` で掴めるようにする (掴むと `cursor: grab`)
+  - `movable` で項目ごとに可/不可。`false` の項目は掴めず、他の項目の挿入で押し出されるだけ (実物の rebar も `RBBS_NOGRIPPER` のバンドは掴めないが、挿入ではずれる)
+  - Storybook に `Components/ToolbarBand` → `Reorderable` / `ReorderableAcrossRows`
+
 ## [0.4.4] - 2026-10-13
 
 ### Fixed

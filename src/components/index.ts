@@ -45,13 +45,23 @@ export type { MenuProps, MenuItem } from './menu/Menu';
 
 export { Toolbar } from './toolbar';
 export type { ToolbarProps, ToolbarItemDef } from './toolbar';
-export { ToolbarBand, ToolbarRow, packToolbarRows, useToolbarRows } from './toolbar';
+export {
+  ToolbarBand,
+  ToolbarRow,
+  packToolbarRows,
+  useToolbarRows,
+  resolveToolbarDropIndex,
+  useToolbarReorder,
+} from './toolbar';
 export type {
   ToolbarBandProps,
   ToolbarRowProps,
   PackToolbarRowsOptions,
   UseToolbarRowsOptions,
   UseToolbarRowsResult,
+  ToolbarItemRect,
+  UseToolbarReorderOptions,
+  UseToolbarReorderResult,
 } from './toolbar';
 
 export { AddressBar } from './address-bar';

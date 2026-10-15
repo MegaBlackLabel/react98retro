@@ -187,3 +187,13 @@
   justify-content: center;
   line-height: 1;
 }
+
+/* 並べ替えの取っ手として使うときの見た目 (掴めることが分かるように) */
+.gripDraggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gripDraggable:active {
+  cursor: grabbing;
+}
