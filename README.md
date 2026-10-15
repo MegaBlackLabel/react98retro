@@ -78,12 +78,52 @@ bun run build:lib
 
 このライブラリは [GitHub Packages](https://github.com/MegaBlackLabel/react98retro/packages) として公開されています。
 
-### 1. `.npmrc` にレジストリを追加
+### 1. 認証とレジストリの設定
 
-プロジェクトルートの `.npmrc` に以下を追記してください。
+> [!IMPORTANT]
+> GitHub Packages は **public パッケージでも匿名アクセスに 401 を返します**（npmjs.com の
+> public が匿名 200 なのと違います）。registry の追記だけでは `bun add` / `npm install` は
+> 通りません。認証トークンが必要です。
+
+トークンには **`read:packages`** が要ります。**トークンはコミットしないでください**（レジストリ行だけを
+プロジェクトの `.npmrc` に置き、トークンは `~/.npmrc` か CI のシークレットに置きます）。
+
+プロジェクトルートの `.npmrc`:
 
 ```
 @megablacklabel:registry=https://npm.pkg.github.com
+```
+
+**ローカル** — `~/.npmrc` にトークンを置きます:
+
+```
+//npm.pkg.github.com/:_authToken=<read:packages 付きトークン>
+```
+
+gh CLI を使う場合:
+
+```bash
+gh auth refresh -s read:packages   # トークンに read:packages を足す
+gh auth token                      # 表示された値を ~/.npmrc に貼る
+```
+
+Personal Access Token から作る場合は `read:packages` を付けて発行してください。
+
+**CI (GitHub Actions)** — `GITHUB_TOKEN` を渡します。workflow の `permissions` に
+`packages: read` が要ります（無いと 403 になります）:
+
+```yaml
+permissions:
+  contents: read
+  packages: read
+
+steps:
+  - name: Configure GitHub Packages
+    run: |
+      echo "@megablacklabel:registry=https://npm.pkg.github.com" > ~/.npmrc
+      echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> ~/.npmrc
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### 2. インストール
