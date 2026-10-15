@@ -281,4 +281,50 @@ describe('useToolbarReorder', () => {
 
     expect(onReorder).toHaveBeenCalledWith(0, 2);
   });
+
+  it('stays put after the consumer re-renders with the new order', () => {
+    // ドラッグ中に組み替えると、呼ぶ側の再レンダリングで項目の位置が実際に動く。
+    // そのあと同じポインタ位置で揺り戻しが起きないことを押さえる。
+    const onReorder = vi.fn();
+    const { result } = renderHook(() => useToolbarReorder({ count: 3, onReorder }));
+
+    act(() => {
+      [0, 1, 2].forEach((i) => {
+        result.current.itemRefs.current[i] = element(RECTS[i].left, RECTS[i].right);
+      });
+    });
+    act(() => {
+      result.current.getHandleProps(0).onPointerDown({
+        pointerId: 1,
+        clientX: 10,
+        currentTarget: { setPointerCapture: vi.fn() },
+        stopPropagation: vi.fn(),
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 35, pointerId: 1 }));
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(result.current.draggingIndex).toBe(1);
+
+    // 呼ぶ側が並べ替えを適用した後の並び (掴んでいた項目が index 1 へ動く)
+    act(() => {
+      result.current.itemRefs.current[0] = element(RECTS[0].left, RECTS[0].right);
+      result.current.itemRefs.current[1] = element(RECTS[1].left, RECTS[1].right);
+      result.current.itemRefs.current[2] = element(RECTS[2].left, RECTS[2].right);
+    });
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 35, pointerId: 1 }));
+    });
+
+    // 同じ位置に留まる (行き来しない)
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(result.current.draggingIndex).toBe(1);
+
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: 35, pointerId: 1 }));
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+  });
 });
