@@ -81,9 +81,10 @@ export const Wrapped: Story = {
 };
 
 /**
- * グリップで並べ替えられる帯 (フェーズ 1: 同じ段の中)。
+ * グリップで並べ替えられる帯。
  *
- * グループの左端のグリップをドラッグすると、その場で順序が入れ替わる。
+ * グループの左端のグリップをドラッグすると、ドラッグ中にその場で順序が入れ替わる
+ * (実物の rebar と同じ)。
  * 「Properties」のグループは動かせない例 (`movable: false` + `grip={false}`)。
  * 実物の rebar では、グリップが無いバンドは掴めないので並べ替えできない
  * (`RBBS_NOGRIPPER`)。
@@ -93,7 +94,7 @@ export const Reorderable: Story = {
     const labels = ['Back/Forward', 'Up', 'Cut/Copy', 'Paste/Delete', 'Properties(固定)'];
     const [order, setOrder] = useState(() => groups.map((_, index) => index));
     const movable = [true, true, true, true, false];
-    const { itemRefs, draggingIndex, dropIndex, getHandleProps, canReorder } = useToolbarReorder({
+    const { itemRefs, draggingIndex, getHandleProps, canReorder } = useToolbarReorder({
       count: groups.length,
       movable,
       onReorder: (from, to) =>
@@ -122,10 +123,12 @@ export const Reorderable: Story = {
                   }}
                   data-testid={`reorder-group-${groupIndex}`}
                   data-dragging={draggingIndex === position ? '' : undefined}
-                  data-drop={dropIndex === position && draggingIndex !== position ? '' : undefined}
+                  data-drop={draggingIndex === position ? '' : undefined}
                   style={{
                     opacity: draggingIndex === position ? 0.5 : undefined,
-                    boxShadow: dropIndex === position && draggingIndex !== position ? 'inset 2px 0 0 #000080' : undefined,
+                    // 挿入位置は外側の影で描く。内側の影 (inset) は中身の下に描かれるので
+                    // 左端 2px が中身に隠れて見えない。
+                    boxShadow: draggingIndex === position ? '-2px 0 0 0 #000080' : undefined,
                   }}
                   aria-label={labels[groupIndex]}
                 />
@@ -142,15 +145,16 @@ export const Reorderable: Story = {
  * 段をまたいで並べ替えられる帯 (フェーズ 2)。`allowCrossRow: true`。
  *
  * 幅を狭くして 2 段に折り返させている。グリップを掴んで**別の段**へ持っていくと、
- * ポインタの y が入っている段の挿入位置に移動する。段分けはドロップ後に
- * `useToolbarRows` が測って詰め直す。
+ * ポインタの y が入っている段へ移動する。段分けは `useToolbarRows` が幅で詰め直すので、
+ * 入る段は組み替えてみるまで確定しない (だからドラッグ中に組み替える = 見えている
+ * 配置がそのまま結果になる)。
  */
 export const ReorderableAcrossRows: Story = {
   render: () => {
     const [order, setOrder] = useState(() => groups.map((_, index) => index));
     const movable = [true, true, true, true, false];
     const { stripRef, itemRefs, rows } = useToolbarRows({ count: groups.length, gap: 2 });
-    const { draggingIndex, dropIndex, getHandleProps, canReorder } = useToolbarReorder({
+    const { draggingIndex, getHandleProps, canReorder } = useToolbarReorder({
       count: groups.length,
       movable,
       allowCrossRow: true,
@@ -181,13 +185,10 @@ export const ReorderableAcrossRows: Story = {
                     itemRefs.current[position] = element;
                   }}
                   data-testid={`cross-group-${order[position]}`}
-                  data-drop={dropIndex === position && draggingIndex !== position ? '' : undefined}
+                  data-drop={draggingIndex === position ? '' : undefined}
                   style={{
                     opacity: draggingIndex === position ? 0.5 : undefined,
-                    boxShadow:
-                      dropIndex === position && draggingIndex !== position
-                        ? 'inset 2px 0 0 #000080'
-                        : undefined,
+                    boxShadow: draggingIndex === position ? '-2px 0 0 0 #000080' : undefined,
                   }}
                 />
               ))}

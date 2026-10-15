@@ -114,10 +114,11 @@ export type UseToolbarReorderOptions = {
 export type UseToolbarReorderResult = {
   /** 項目ごとの ref。`ref={(el) => { itemRefs.current[index] = el; }}` の形で付ける */
   itemRefs: React.RefObject<(HTMLElement | null)[]>;
-  /** ドラッグ中の項目の index (ドラッグしていなければ null) */
+  /**
+   * ドラッグ中の項目の index (ドラッグしていなければ null)。並べ替えのたびに
+   * 「移動後の index」へ更新されるので、そのまま装飾 (薄くする等) に使える。
+   */
   draggingIndex: number | null;
-  /** 現在の挿入位置 (ドラッグしていなければ null) */
-  dropIndex: number | null;
   /** 掴むところ (グリップ) に付ける props */
   getHandleProps: (index: number) => {
     onPointerDown: (event: React.PointerEvent) => void;
@@ -128,11 +129,17 @@ export type UseToolbarReorderResult = {
 };
 
 /**
- * ツールバーの項目をグリップでドラッグして並べ替える (フェーズ 1: 同じ段の中)。
+ * ツールバーの項目をグリップでドラッグして並べ替える。
  *
- * ポインタの X から挿入位置を出すだけで、順序そのものは呼ぶ側が持ち続ける
- * (controlled)。段分けは `useToolbarRows` が測って詰め直すので、並べ替えたら
- * そのまま追従する。
+ * ドラッグ中に `onReorder` を呼んで**実際に並びを組み替える** (実物の rebar と同じ)。
+ * 段は `useToolbarRows` が幅で詰め直すので、「どの段のどこに入るか」は組み替えて
+ * みるまで確定しない。先に組み替えれば、ドラッグ中に見えている配置がそのまま結果に
+ * なる (予告用の線を別に描く必要がない)。
+ *
+ * 順序そのものは呼ぶ側が持ち続ける (controlled)。
+ * `onReorder(from, to)` の `to` は「`from` を取り除いた後の配列」での位置なので、
+ * 呼ぶ側は `const next = [...items]; next.splice(to, 0, next.splice(from, 1)[0]);`
+ * の形で適用する。
  */
 export function useToolbarReorder({
   count,
@@ -144,7 +151,8 @@ export function useToolbarReorder({
   const ownRefs = useRef<(HTMLElement | null)[]>([]);
   const itemRefs = externalRefs ?? ownRefs;
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  // ドラッグ中の項目が「いま何番目か」。並べ替えるたびに移動後の index へ更新する
+  const currentIndex = useRef<number | null>(null);
 
   // 最新の指定は ref から読む (render 中には触らない)
   const movableKey = movable?.map((flag) => (flag ? '1' : '0')).join('') ?? '';
@@ -162,35 +170,50 @@ export function useToolbarReorder({
       const rect = item.getBoundingClientRect();
       return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     });
-  }, []);
+    // itemRefs は呼ぶ側が持つ ref (useRef の戻り) なので、依存に入れても作り直されない
+  }, [itemRefs]);
 
   useEffect(() => {
     if (draggingIndex === null) return undefined;
 
-    const handleMove = (event: PointerEvent) => {
-      setDropIndex(
-        resolveToolbarDropIndex(
-          { x: event.clientX, y: event.clientY },
-          readRects(),
-          draggingIndex,
-          { allowCrossRow: latest.current.allowCrossRow },
-        ),
-      );
-    };
-    const handleUp = (event: PointerEvent) => {
-      const target = resolveToolbarDropIndex(
+    const targetAt = (event: PointerEvent): number | null => {
+      const from = currentIndex.current;
+      if (from === null) return null;
+      return resolveToolbarDropIndex(
         { x: event.clientX, y: event.clientY },
         readRects(),
-        draggingIndex,
+        from,
         { allowCrossRow: latest.current.allowCrossRow },
       );
+    };
+
+    // ドラッグ中に実際へ並べ替える (実物の rebar と同じ)。段は幅で詰め直されるので、
+    // 「どの段のどこに入るか」は結果を見るまで分からない。先に組み替えてしまえば、
+    // 見えている配置がそのまま結果になる (予告と結果がずれない)。
+    const applyReorder = (from: number, to: number) => {
+      latest.current.onReorder?.(from, to);
+      // 呼ぶ側は `next.splice(to, 0, next.splice(from, 1)[0])` で並べ替えるので、
+      // 移動後の項目の index は `to`。
+      currentIndex.current = to;
+      setDraggingIndex(to);
+    };
+
+    const handleMove = (event: PointerEvent) => {
+      const target = targetAt(event);
+      const from = currentIndex.current;
+      if (target === null || from === null) return;
+      if (target !== from) applyReorder(from, target);
+    };
+    const handleUp = (event: PointerEvent) => {
+      const target = targetAt(event);
+      const from = currentIndex.current;
+      if (target !== null && from !== null && target !== from) applyReorder(from, target);
+      currentIndex.current = null;
       setDraggingIndex(null);
-      setDropIndex(null);
-      if (target !== draggingIndex) latest.current.onReorder?.(draggingIndex, target);
     };
     const handleCancel = () => {
+      currentIndex.current = null;
       setDraggingIndex(null);
-      setDropIndex(null);
     };
 
     window.addEventListener('pointermove', handleMove);
@@ -210,8 +233,8 @@ export function useToolbarReorder({
       event.stopPropagation();
       event.preventDefault();
       (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+      currentIndex.current = index;
       setDraggingIndex(index);
-      setDropIndex(index);
     },
   }), []);
 
@@ -220,5 +243,5 @@ export function useToolbarReorder({
     [],
   );
 
-  return { itemRefs, draggingIndex, dropIndex, getHandleProps, canReorder };
+  return { itemRefs, draggingIndex, getHandleProps, canReorder };
 }
