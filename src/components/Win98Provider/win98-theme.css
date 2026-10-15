@@ -49,7 +49,8 @@
 .win98 .status-bar,
 .win98 [role='toolbar'],
 .win98 [role='menubar'],
-.win98 [role='menu'] {
+.win98 [role='menu'],
+.win98 [role='tablist'] {
   user-select: none;
 }
 
@@ -64,7 +65,7 @@
 
 /* 一覧 (テーブル / ツリー) も実物と同じく文字を選択できない。ドラッグは行の選択や
    スクロールに使うので、文字が選択されて青く伸びると操作の邪魔になる。 */
-.win98 .sunken-panel > table,
+.win98 .sunken-panel,
 .win98 .tree-view {
   user-select: none;
 }

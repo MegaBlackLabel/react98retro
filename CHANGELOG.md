@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **タブ・ツールバー帯・一覧の外枠でも文字が選択されないようにした**。消費側のチェックリスト ウィンドウで、タブ (`role="tablist"`) とツールバー帯の余白、`.sunken-panel` の外枠がまだ `user-select: auto` で、ドラッグすると青い選択が伸びていた。
+  - `win98-theme.css`: 除外グループに `[role='tablist']` を追加、`.sunken-panel > table` → `.sunken-panel` に拡大
+  - `Toolbar.module.css`: `.bandContainer` / `.bandRow` に `user-select: none`
+
 ## [0.4.3] - 2026-10-13
 
 ### Fixed

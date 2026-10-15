@@ -18,6 +18,7 @@
 
 /* ツールバー帯。外周の溝を自分で持ち、段を縦に並べる。 */
 .bandContainer {
+  user-select: none;
   display: flex;
   flex-direction: column;
   background: #c0c0c0;
@@ -43,6 +44,8 @@
 
 /* ツールバー 1 段。計測が終わるまでは CSS でも折り返し、子は縮めない (縮むと幅を測れない)。 */
 .bandRow {
+  /* 帯は外枠なので、ドラッグで文字が選択されないようにする (中の Toolbar も同じ) */
+  user-select: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
