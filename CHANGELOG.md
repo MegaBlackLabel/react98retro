@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2026-10-16
+
+### Changed
+
+- `useToolbarReorder` が**ドラッグ中に実際へ並べ替える**ようになりました (実物の rebar と同じ)。段は幅で詰め直されるため「どの段のどこに入るか」は組み替えてみるまで確定せず、予告 (挿入位置の線) では当てられません。先に組み替えてしまえば、ドラッグ中に見えている配置がそのまま結果になります。
+  - `onReorder` はドロップ時ではなく、**ドラッグ中に挿入位置が変わった時点**で呼ばれます (1 回のドラッグで複数回)。
+  - `draggingIndex` は並べ替えのたびに「移動後の index」へ更新されます (そのまま装飾に使えます)。
+  - 使わなくなった `dropIndex` を削除しました (並べ替えが即時なので、予告位置は `draggingIndex` と一致するため)。
+  - `pointerup` で改めて並べ替えることはありません (ドラッグ中に確定済みのとき)。
+- `react-hooks/exhaustive-deps` の警告を解消 (`readRects` の依存)。
+
+### Fixed
+
+- 段をまたぐドロップで「移動先の段の項目と入れ替わったように見える」問題を解消 (上の即時並べ替えによる)。
+- Storybook の並べ替えストーリーの挿入位置マーカーが見えなかったのを修正 (内側の影 `inset` は中身の下に描かれるため、外側の影 `-2px 0 0 0` に変更)。
+
 ## [0.4.5] - 2026-10-16
 
 ### Added
