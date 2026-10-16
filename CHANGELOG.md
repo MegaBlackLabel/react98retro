@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2026-10-16
+
+### Changed
+
+- 消費側 (ccatalog-web-port) がこのバージョンを固定して使うためのリリースです。0.4.7 からの API 変更はありません (段を明示的に持つ使い方 + ドロップが入る段を返す API は 0.4.7 で入っています)。
+
 ## [0.4.7] - 2026-10-16
 
 ### Added
