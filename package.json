@@ -1,6 +1,6 @@
 {
   "name": "@megablacklabel/react98retro",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Windows 98 UI component library for React",
   "type": "module",
   "main": "./dist/react98retro.umd.cjs",
