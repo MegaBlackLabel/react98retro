@@ -38,18 +38,6 @@ function rowTopAt(
   );
 }
 
-/**
- * ポインタ位置から、ドラッグ中の項目の挿入位置 (結果の配列での index) を出す。
- *
- * 段 (行) をまたぐかどうかは `allowCrossRow` で決める:
- * - 既定 (フェーズ 1): 掴んだ項目と同じ段が対象
- * - `allowCrossRow: true` (フェーズ 2): ポインタの y が入っている段が対象
- *
- * 挿入位置は「対象の段で、中心がポインタより右にある最初の項目の手前」。段の
- * **全項目**で見るので、動かせない項目 (`movable[index] === false`) も挿入で押し出される
- * (掴めないだけで、位置は動く。実物の rebar の `RBBS_NOGRIPPER` と同じ)。
- * `movable` は掴めるかどうか (`useToolbarReorder` の `canReorder`) にだけ効く。
- */
 /** ドロップ先 (結果の配列での位置と、入る段)。 */
 export type ToolbarDropTarget = {
   /**
@@ -225,16 +213,31 @@ export function useToolbarReorder({
   useEffect(() => {
     if (draggingIndex === null) return undefined;
 
-    const targetAt = (event: PointerEvent): ToolbarDropTarget | null => {
+    const targetAt = (
+      event: PointerEvent,
+    ): { target: ToolbarDropTarget; currentRow: number } | null => {
       const from = currentIndex.current;
       if (from === null) return null;
-      return resolveToolbarDropTarget(
+      const rects = readRects();
+      const target = resolveToolbarDropTarget(
         { x: event.clientX, y: event.clientY },
-        readRects(),
+        rects,
         from,
         { allowCrossRow: latest.current.allowCrossRow },
       );
+      const currentRow = rowIndexOf(rects[from]?.top ?? target.row, rects);
+      return { target, currentRow };
     };
+
+    /**
+     * 並べ替える必要があるか。位置が変わるか、**段が変わる**とき。
+     * 段を明示的に持つ使い方では、位置が同じまま段だけ変わる移動 (隣の段の末尾へ等) が
+     * あるので、位置だけで判定するとその移動が落ちる。
+     */
+    const needsReorder = (
+      resolved: { target: ToolbarDropTarget; currentRow: number },
+      from: number,
+    ) => resolved.target.to !== from || resolved.target.row !== resolved.currentRow;
 
     // ドラッグ中に実際へ並べ替える (実物の rebar と同じ)。段は幅で詰め直されるので、
     // 「どの段のどこに入るか」は結果を見るまで分からない。先に組み替えてしまえば、
@@ -248,16 +251,18 @@ export function useToolbarReorder({
     };
 
     const handleMove = (event: PointerEvent) => {
-      const target = targetAt(event);
+      const resolved = targetAt(event);
       const from = currentIndex.current;
-      if (target === null || from === null) return;
-      if (target.to !== from) applyReorder(from, target.to, target.row);
+      if (resolved === null || from === null) return;
+      if (needsReorder(resolved, from)) {
+        applyReorder(from, resolved.target.to, resolved.target.row);
+      }
     };
     const handleUp = (event: PointerEvent) => {
-      const target = targetAt(event);
+      const resolved = targetAt(event);
       const from = currentIndex.current;
-      if (target !== null && from !== null && target.to !== from) {
-        applyReorder(from, target.to, target.row);
+      if (resolved !== null && from !== null && needsReorder(resolved, from)) {
+        applyReorder(from, resolved.target.to, resolved.target.row);
       }
       currentIndex.current = null;
       setDraggingIndex(null);

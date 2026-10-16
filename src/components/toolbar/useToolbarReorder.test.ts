@@ -394,4 +394,35 @@ describe('useToolbarReorder', () => {
     });
     expect(onReorder).toHaveBeenCalledTimes(1);
   });
+
+  it('moves an item to another row even when the sequence position does not change', () => {
+    // 位置が同じでも段が変わるなら移す (段を明示的に持つ使い方で必要)。
+    // 2 番目の項目を 1 段目の末尾へ = 位置は 2 のままだが段は 1 -> 0。
+    const onReorder = vi.fn();
+    const { result } = renderHook(() =>
+      useToolbarReorder({ count: 3, onReorder, allowCrossRow: true }),
+    );
+
+    act(() => {
+      result.current.itemRefs.current[0] = element(0, 20, 0);
+      result.current.itemRefs.current[1] = element(22, 42, 0);
+      result.current.itemRefs.current[2] = element(0, 20, 24);
+    });
+    act(() => {
+      result.current.getHandleProps(2).onPointerDown({
+        pointerId: 1,
+        clientX: 10,
+        clientY: 35,
+        currentTarget: { setPointerCapture: vi.fn() },
+        stopPropagation: vi.fn(),
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
+    // 1 段目の右端 (2 番目の項目の中心より右) へ
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 11, pointerId: 1 }));
+    });
+
+    expect(onReorder).toHaveBeenCalledWith(2, 2, 0);
+  });
 });
