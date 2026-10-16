@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2026-10-16
+
+### Added
+
+- `resolveToolbarDropTarget(pointer, rects, fromIndex, { allowCrossRow })` — ドロップ先を `{ to, row }` で返します (`to` は結果の配列での挿入位置、`row` は入る段 = 上から 0, 1, 2...)。`resolveToolbarDropIndex` は `to` だけを返す薄い包みとして残ります。
+- `useToolbarReorder` の `onReorder(from, to, row)` — 入る段も渡します。段を明示的に持つ使い方 (幅での自動折り返しをやめて段を自分で決める) で、その段へ移すのにそのまま使えます。
+
+### Changed
+
+- 段を明示的に持つ使い方では、段は呼ぶ側が決めます (`useToolbarRows` の幅での詰め直しを使わない)。実物の rebar も段は `RBBS_BREAK` で決まり、幅では自動で折り返しません。段をまたぐ移動が「幅に入るかどうか」に左右されなくなり、ドロップした段にそのまま入ります。
+
 ## [0.4.6] - 2026-10-16
 
 ### Changed

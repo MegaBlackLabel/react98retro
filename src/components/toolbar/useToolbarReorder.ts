@@ -38,10 +38,31 @@ function rowTopAt(
   );
 }
 
+/** ドロップ先 (結果の配列での位置と、入る段)。 */
+export type ToolbarDropTarget = {
+  /**
+   * 「fromIndex を取り除いた後の配列」での挿入位置。呼ぶ側は
+   * `const next = [...items]; next.splice(to, 0, next.splice(from, 1)[0]);` で並べ替える。
+   */
+  to: number;
+  /** 入る段 (上から 0, 1, 2...)。段を明示的に持つ使い方で、その段へ移すのに使う。 */
+  row: number;
+};
+
+/** 段の並び (rects の top の重複を除いたもの) の中で、その top が何番目か。 */
+function rowIndexOf(top: number, rects: readonly ToolbarItemRect[]): number {
+  const tops: number[] = [];
+  rects.forEach((rect) => {
+    if (!tops.includes(rect.top)) tops.push(rect.top);
+  });
+  tops.sort((a, b) => a - b);
+  return Math.max(0, tops.indexOf(top));
+}
+
 /**
- * ポインタ位置から、ドラッグ中の項目の挿入位置 (結果の配列での index) を出す。
+ * ポインタ位置からドロップ先 (挿入位置と、入る段) を出す。
  *
- * 段 (行) をまたぐかどうかは `allowCrossRow` で決める:
+ * 段をまたぐかどうかは `allowCrossRow` で決める:
  * - 既定 (フェーズ 1): 掴んだ項目と同じ段が対象
  * - `allowCrossRow: true` (フェーズ 2): ポインタの y が入っている段が対象
  *
@@ -49,17 +70,21 @@ function rowTopAt(
  * **全項目**で見るので、動かせない項目 (`movable[index] === false`) も挿入で押し出される
  * (掴めないだけで、位置は動く。実物の rebar の `RBBS_NOGRIPPER` と同じ)。
  * `movable` は掴めるかどうか (`useToolbarReorder` の `canReorder`) にだけ効く。
+ *
+ * 段は呼ぶ側が決める (幅での自動折り返しはしない)。`row` は「いま描かれている段」の
+ * 上からの番号なので、段を明示的に持つ使い方では、その段へ移すのにそのまま使える。
  */
-export function resolveToolbarDropIndex(
+export function resolveToolbarDropTarget(
   pointer: ToolbarReorderPointer,
   rects: readonly ToolbarItemRect[],
   fromIndex: number,
   { allowCrossRow = false }: ToolbarDropIndexOptions = {},
-): number {
+): ToolbarDropTarget {
   const dragged = rects[fromIndex];
-  if (!dragged) return fromIndex;
+  if (!dragged) return { to: fromIndex, row: 0 };
 
   const targetTop = allowCrossRow ? rowTopAt(pointer.y, rects, dragged.top) : dragged.top;
+  const row = rowIndexOf(targetTop, rects);
 
   // 対象の段の項目 (動かせない項目も含める)。動かせない項目は「掴めない」だけで、
   // ほかの項目の挿入で押し出される (実物の rebar も RBBS_NOGRIPPER のバンドはずれる)。
@@ -67,7 +92,7 @@ export function resolveToolbarDropIndex(
   rects.forEach((rect, index) => {
     if (rect.top === targetTop) rowItems.push(index);
   });
-  if (rowItems.length === 0) return fromIndex;
+  if (rowItems.length === 0) return { to: fromIndex, row };
 
   // 挿入位置 = 「中心がポインタより右にある最初の項目」の手前 (無ければ段の末尾の次)
   const beforeIndex = rowItems.findIndex(
@@ -77,12 +102,21 @@ export function resolveToolbarDropIndex(
     beforeIndex === -1 ? rowItems[rowItems.length - 1] + 1 : rowItems[beforeIndex];
 
   // 返す index は「fromIndex を取り除いた後の配列」での位置。
-  // 呼ぶ側は `const next = [...items]; next.splice(to, 0, next.splice(from, 1)[0]);` で並べ替える。
   let to = 0;
   for (let index = 0; index < insertBefore; index += 1) {
     if (index !== fromIndex) to += 1;
   }
-  return to;
+  return { to, row };
+}
+
+/** 挿入位置だけが欲しいとき (結果の配列での index)。 */
+export function resolveToolbarDropIndex(
+  pointer: ToolbarReorderPointer,
+  rects: readonly ToolbarItemRect[],
+  fromIndex: number,
+  options: ToolbarDropIndexOptions = {},
+): number {
+  return resolveToolbarDropTarget(pointer, rects, fromIndex, options).to;
 }
 
 export type UseToolbarReorderOptions = {
@@ -107,8 +141,11 @@ export type UseToolbarReorderOptions = {
    * 挿し込む位置なので、呼ぶ側は
    * `const next = [...items]; next.splice(to, 0, next.splice(from, 1)[0]);`
    * の形で並べ替えられる。
+   *
+   * `row` は入る段 (上から 0, 1, 2...)。段を明示的に持つ使い方で、その段へ移すのに使う
+   * (幅での自動折り返しをやめて段を自分で決めると、段をまたぐ移動がその場で確定する)。
    */
-  onReorder?: (from: number, to: number) => void;
+  onReorder?: (from: number, to: number, row: number) => void;
 };
 
 export type UseToolbarReorderResult = {
@@ -176,22 +213,37 @@ export function useToolbarReorder({
   useEffect(() => {
     if (draggingIndex === null) return undefined;
 
-    const targetAt = (event: PointerEvent): number | null => {
+    const targetAt = (
+      event: PointerEvent,
+    ): { target: ToolbarDropTarget; currentRow: number } | null => {
       const from = currentIndex.current;
       if (from === null) return null;
-      return resolveToolbarDropIndex(
+      const rects = readRects();
+      const target = resolveToolbarDropTarget(
         { x: event.clientX, y: event.clientY },
-        readRects(),
+        rects,
         from,
         { allowCrossRow: latest.current.allowCrossRow },
       );
+      const currentRow = rowIndexOf(rects[from]?.top ?? target.row, rects);
+      return { target, currentRow };
     };
+
+    /**
+     * 並べ替える必要があるか。位置が変わるか、**段が変わる**とき。
+     * 段を明示的に持つ使い方では、位置が同じまま段だけ変わる移動 (隣の段の末尾へ等) が
+     * あるので、位置だけで判定するとその移動が落ちる。
+     */
+    const needsReorder = (
+      resolved: { target: ToolbarDropTarget; currentRow: number },
+      from: number,
+    ) => resolved.target.to !== from || resolved.target.row !== resolved.currentRow;
 
     // ドラッグ中に実際へ並べ替える (実物の rebar と同じ)。段は幅で詰め直されるので、
     // 「どの段のどこに入るか」は結果を見るまで分からない。先に組み替えてしまえば、
     // 見えている配置がそのまま結果になる (予告と結果がずれない)。
-    const applyReorder = (from: number, to: number) => {
-      latest.current.onReorder?.(from, to);
+    const applyReorder = (from: number, to: number, row: number) => {
+      latest.current.onReorder?.(from, to, row);
       // 呼ぶ側は `next.splice(to, 0, next.splice(from, 1)[0])` で並べ替えるので、
       // 移動後の項目の index は `to`。
       currentIndex.current = to;
@@ -199,15 +251,19 @@ export function useToolbarReorder({
     };
 
     const handleMove = (event: PointerEvent) => {
-      const target = targetAt(event);
+      const resolved = targetAt(event);
       const from = currentIndex.current;
-      if (target === null || from === null) return;
-      if (target !== from) applyReorder(from, target);
+      if (resolved === null || from === null) return;
+      if (needsReorder(resolved, from)) {
+        applyReorder(from, resolved.target.to, resolved.target.row);
+      }
     };
     const handleUp = (event: PointerEvent) => {
-      const target = targetAt(event);
+      const resolved = targetAt(event);
       const from = currentIndex.current;
-      if (target !== null && from !== null && target !== from) applyReorder(from, target);
+      if (resolved !== null && from !== null && needsReorder(resolved, from)) {
+        applyReorder(from, resolved.target.to, resolved.target.row);
+      }
       currentIndex.current = null;
       setDraggingIndex(null);
     };

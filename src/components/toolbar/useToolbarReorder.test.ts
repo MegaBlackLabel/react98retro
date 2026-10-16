@@ -1,6 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveToolbarDropIndex, useToolbarReorder } from './useToolbarReorder';
+import {
+  resolveToolbarDropIndex,
+  resolveToolbarDropTarget,
+  useToolbarReorder,
+} from './useToolbarReorder';
 
 /** 幅 20 の項目が 2px 間隔で並んでいる想定。 */
 const RECTS = [
@@ -102,6 +106,41 @@ function element(left: number, right: number, top = 0): HTMLElement {
   } as unknown as HTMLElement;
 }
 
+describe('resolveToolbarDropTarget', () => {
+  // 1 段目に 0,1,2 (top 0)、2 段目に 3,4 (top 24)
+  const twoRows = [
+    { left: 0, right: 20, top: 0, bottom: 22 },
+    { left: 22, right: 42, top: 0, bottom: 22 },
+    { left: 44, right: 64, top: 0, bottom: 22 },
+    { left: 0, right: 20, top: 24, bottom: 46 },
+    { left: 22, right: 42, top: 24, bottom: 46 },
+  ];
+
+  it('reports the row the pointer is in', () => {
+    // 2 段目の真ん中 -> 2 段目 (index 1) の 2 番目のスロット
+    expect(resolveToolbarDropTarget({ x: 30, y: 35 }, twoRows, 0, { allowCrossRow: true })).toEqual({
+      to: 3,
+      row: 1,
+    });
+    // 1 段目の中 (2 番目の項目の中心を越えたあたり -> 1 段目の index 1)
+    expect(resolveToolbarDropTarget({ x: 45, y: 11 }, twoRows, 0, { allowCrossRow: true })).toEqual({
+      to: 1,
+      row: 0,
+    });
+  });
+
+  it('reports the dragged item\'s own row when allowCrossRow is not set', () => {
+    expect(resolveToolbarDropTarget({ x: 999, y: 35 }, twoRows, 0)).toEqual({ to: 2, row: 0 });
+  });
+
+  it('agrees with resolveToolbarDropIndex on the index', () => {
+    const pointer = { x: 30, y: 35 };
+    expect(resolveToolbarDropTarget(pointer, twoRows, 0, { allowCrossRow: true }).to).toBe(
+      resolveToolbarDropIndex(pointer, twoRows, 0, { allowCrossRow: true }),
+    );
+  });
+});
+
 describe('useToolbarReorder', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -132,7 +171,7 @@ describe('useToolbarReorder', () => {
     act(() => {
       window.dispatchEvent(new PointerEvent('pointermove', { clientX: 35, pointerId: 1 }));
     });
-    expect(onReorder).toHaveBeenCalledWith(0, 1);
+    expect(onReorder).toHaveBeenCalledWith(0, 1, 0);
     // 掴んでいる項目は移動後の index を指す (呼ぶ側がその位置を装飾できる)
     expect(result.current.draggingIndex).toBe(1);
   });
@@ -242,9 +281,37 @@ describe('useToolbarReorder', () => {
       window.dispatchEvent(new PointerEvent('pointermove', { clientX: 5, clientY: 35, pointerId: 1 }));
     });
 
-    // 2 段目の先頭 = 取り除いた後では index 1
-    expect(onReorder).toHaveBeenCalledWith(0, 1);
+    // 2 段目の先頭 = 取り除いた後では index 1。入る段 (2 段目 = index 1) も渡す
+    expect(onReorder).toHaveBeenCalledWith(0, 1, 1);
     expect(result.current.draggingIndex).toBe(1);
+  });
+
+  it('passes the row the drop lands in to onReorder', () => {
+    const onReorder = vi.fn();
+    const { result } = renderHook(() =>
+      useToolbarReorder({ count: 3, onReorder, allowCrossRow: true }),
+    );
+
+    act(() => {
+      result.current.itemRefs.current[0] = element(0, 20, 0);
+      result.current.itemRefs.current[1] = element(22, 42, 0);
+      result.current.itemRefs.current[2] = element(0, 20, 24);
+    });
+    act(() => {
+      result.current.getHandleProps(0).onPointerDown({
+        pointerId: 1,
+        clientX: 10,
+        clientY: 11,
+        currentTarget: { setPointerCapture: vi.fn() },
+        stopPropagation: vi.fn(),
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
+    // 1 段目の中で動かしても段は 0 のまま
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 33, clientY: 11, pointerId: 1 }));
+    });
+    expect(onReorder).toHaveBeenCalledWith(0, 1, 0);
   });
 
   it('reports canReorder from the movable flags', () => {
@@ -279,7 +346,7 @@ describe('useToolbarReorder', () => {
       window.dispatchEvent(new PointerEvent('pointermove', { clientX: 58, pointerId: 1 }));
     });
 
-    expect(onReorder).toHaveBeenCalledWith(0, 2);
+    expect(onReorder).toHaveBeenCalledWith(0, 2, 0);
   });
 
   it('stays put after the consumer re-renders with the new order', () => {
@@ -326,5 +393,36 @@ describe('useToolbarReorder', () => {
       window.dispatchEvent(new PointerEvent('pointerup', { clientX: 35, pointerId: 1 }));
     });
     expect(onReorder).toHaveBeenCalledTimes(1);
+  });
+
+  it('moves an item to another row even when the sequence position does not change', () => {
+    // 位置が同じでも段が変わるなら移す (段を明示的に持つ使い方で必要)。
+    // 2 番目の項目を 1 段目の末尾へ = 位置は 2 のままだが段は 1 -> 0。
+    const onReorder = vi.fn();
+    const { result } = renderHook(() =>
+      useToolbarReorder({ count: 3, onReorder, allowCrossRow: true }),
+    );
+
+    act(() => {
+      result.current.itemRefs.current[0] = element(0, 20, 0);
+      result.current.itemRefs.current[1] = element(22, 42, 0);
+      result.current.itemRefs.current[2] = element(0, 20, 24);
+    });
+    act(() => {
+      result.current.getHandleProps(2).onPointerDown({
+        pointerId: 1,
+        clientX: 10,
+        clientY: 35,
+        currentTarget: { setPointerCapture: vi.fn() },
+        stopPropagation: vi.fn(),
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
+    // 1 段目の右端 (2 番目の項目の中心より右) へ
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 11, pointerId: 1 }));
+    });
+
+    expect(onReorder).toHaveBeenCalledWith(2, 2, 0);
   });
 });

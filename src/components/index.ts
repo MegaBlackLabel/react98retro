@@ -51,6 +51,7 @@ export {
   packToolbarRows,
   useToolbarRows,
   resolveToolbarDropIndex,
+  resolveToolbarDropTarget,
   useToolbarReorder,
 } from './toolbar';
 export type {
@@ -59,7 +60,10 @@ export type {
   PackToolbarRowsOptions,
   UseToolbarRowsOptions,
   UseToolbarRowsResult,
+  ToolbarDropIndexOptions,
+  ToolbarDropTarget,
   ToolbarItemRect,
+  ToolbarReorderPointer,
   UseToolbarReorderOptions,
   UseToolbarReorderResult,
 } from './toolbar';
