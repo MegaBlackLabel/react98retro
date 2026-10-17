@@ -102,6 +102,28 @@ export const Maximized: Story = {
   ),
 };
 
+export const MaximizedFixed: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Maximized (Fixed)',
+    maximized: true,
+    restorable: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '最大化したまま固定する (maximized restorable={false})。復元ボタンは非活性で、タイトルバーのダブルクリックやドラッグでも最大化のまま。',
+      },
+    },
+  },
+  render: (args) => (
+    <Window {...args}>
+      <p>このウィンドウは最大化のまま固定され、元のサイズに戻せません。</p>
+    </Window>
+  ),
+};
+
 export const Minimized: Story = {
   args: {
     ...windowArgs,
@@ -115,6 +137,104 @@ export const Minimized: Story = {
   render: (args) => (
     <Window {...args}>
       <p>This window is minimized (only title bar visible at bottom-left).</p>
+    </Window>
+  ),
+};
+
+export const CloseOnly: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Close Only',
+    minimizable: false,
+    maximizable: false,
+    width: 400,
+    height: 240,
+    initialX: 80,
+    initialY: 80,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '閉じるボタンだけを表示する (minimizable={false} maximizable={false})。',
+      },
+    },
+  },
+  render: (args) => (
+    <Window {...args}>
+      <p>タイトルバーには閉じるボタンだけが残ります。</p>
+    </Window>
+  ),
+};
+
+export const MaximizeDisabled: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Maximize Disabled',
+    maximizeDisabled: true,
+    width: 400,
+    height: 240,
+    initialX: 80,
+    initialY: 80,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '最大化ボタンがグレー表示で押せない (maximizeDisabled)。',
+      },
+    },
+  },
+  render: (args) => (
+    <Window {...args}>
+      <p>最大化ボタンは非活性、最小化と閉じるは押せます。</p>
+    </Window>
+  ),
+};
+
+export const MinimizeHidden: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Minimize Hidden',
+    minimizable: false,
+    width: 400,
+    height: 240,
+    initialX: 80,
+    initialY: 80,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '最小化ボタンを表示しない (minimizable={false})。',
+      },
+    },
+  },
+  render: (args) => (
+    <Window {...args}>
+      <p>タイトルバーに最小化ボタンはありません。</p>
+    </Window>
+  ),
+};
+
+export const NotResizable: Story = {
+  args: {
+    ...windowArgs,
+    title: 'Fixed Size Window',
+    resizable: false,
+    width: 400,
+    height: 240,
+    initialX: 80,
+    initialY: 80,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '固定サイズのウィンドウ (resizable={false})。8 方向のリサイズ ハンドルを描かないので、端をつかんでもサイズは変わりません。',
+      },
+    },
+  },
+  render: (args) => (
+    <Window {...args}>
+      <p>このウィンドウはサイズ変更できません (リサイズ ハンドルなし)。</p>
     </Window>
   ),
 };

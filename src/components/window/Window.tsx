@@ -33,6 +33,29 @@ export interface WindowProps
   onMaximize?: () => void;
   onRestore?: () => void;
   onClose?: () => void;
+  /** 最小化ボタンを表示する (既定 true) */
+  minimizable?: boolean;
+  /** 最大化/復元ボタンを表示する (既定 true) */
+  maximizable?: boolean;
+  /** 閉じるボタンを表示する (既定 true) */
+  closable?: boolean;
+  /** 最小化ボタンを非活性にする */
+  minimizeDisabled?: boolean;
+  /** 最大化ボタンを非活性にする (最小化中は自動で非活性になる) */
+  maximizeDisabled?: boolean;
+  /** 閉じるボタンを非活性にする */
+  closeDisabled?: boolean;
+  /**
+   * ユーザーによるサイズ変更を許可する (既定 true)。
+   * false では 8 方向のリサイズ ハンドルとサイズ グリップを描かず、サイズは width/height のまま固定される。
+   */
+  resizable?: boolean;
+  /**
+   * 最大化状態から復元できる (既定 true)。
+   * false では最大化したまま固定され、ダブルクリック・タイトルバーのドラッグ・復元ボタンの
+   * いずれでも戻らない (復元ボタンは非活性になる)。maximized と併用する。
+   */
+  restorable?: boolean;
   snapEnabled?: boolean;
   snapThreshold?: number;
   autoMoveOnSnap?: boolean;
@@ -86,6 +109,14 @@ export function Window({
   onMaximize,
   onRestore,
   onClose,
+  minimizable,
+  maximizable,
+  closable,
+  minimizeDisabled,
+  maximizeDisabled,
+  closeDisabled,
+  resizable = true,
+  restorable = true,
   snapEnabled: snapEnabledProp,
   snapThreshold = 20,
   autoMoveOnSnap: autoMoveOnSnapProp,
@@ -363,6 +394,8 @@ export function Window({
   };
 
   const handleRestore = () => {
+    // restorable=false は最大化のまま固定する。状態も onRestore も動かさない
+    if (!restorable) return;
     setIsMaximized(false);
     if (isManaged && effectiveWindowId) context?.restore(effectiveWindowId);
     onRestore?.();
@@ -373,6 +406,9 @@ export function Window({
     if (isMaximized) handleRestore();
     else handleMaximize();
   };
+
+  // 最大化の固定中はタイトルバーをドラッグしても動かさない (ハンドルごと外す)
+  const dragDisabled = isMaximized && !restorable;
 
   const computedStyle: CSSProperties = isMinimized
     ? {
@@ -452,8 +488,15 @@ export function Window({
         onMaximize={handleMaximize}
         onRestore={handleRestore}
         onClose={onClose}
+        minimizable={minimizable}
+        maximizable={maximizable}
+        closable={closable}
+        minimizeDisabled={minimizeDisabled}
+        maximizeDisabled={maximizeDisabled}
+        closeDisabled={closeDisabled}
+        restoreDisabled={!restorable}
         onDoubleClick={handleTitleBarDoubleClick}
-        {...(isMinimized ? {} : dragHandleProps)}
+        {...(isMinimized || dragDisabled ? {} : dragHandleProps)}
       />
       {!isMinimized && (
         <>
@@ -464,7 +507,7 @@ export function Window({
             {children}
           </div>
           {statusBar}
-          {statusBar && !isMaximized && (() => {
+          {statusBar && resizable && !isMaximized && (() => {
             const { style: seStyle, onPointerDown } = getResizeHandleProps('se');
             const handlePointerDown = (event: React.PointerEvent) => {
               if (effectiveWindowId && restoreShrink && preShrinkGeometries?.[effectiveWindowId]) {
@@ -486,7 +529,7 @@ export function Window({
           })()}
         </>
       )}
-      {!isMaximized && !isMinimized &&
+      {resizable && !isMaximized && !isMinimized &&
         RESIZE_DIRECTIONS.map((dir) => {
           const { style: handleStyle, onPointerDown } = getResizeHandleProps(dir);
           const handlePointerDown = (event: React.PointerEvent) => {
