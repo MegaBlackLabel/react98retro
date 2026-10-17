@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.9] - 2026-10-17
+
+### Added
+
+- **タイトルバーのボタンごとの表示・非活性** (`Window` / `TitleBar`): `minimizable` / `maximizable` / `closable` (既定 true) と `minimizeDisabled` / `maximizeDisabled` / `closeDisabled` (+ `helpDisabled`)。非表示は DOM に描かず、非活性は `disabled` (98.css がグレー表示)。`Window` から `TitleBar` へ渡していなかった `maximizeDisabled` も転送するようにしました。
+- **`resizable`** (既定 true): false で 8 方向のリサイズ ハンドルと、ステータスバーのサイズグリップを描きません (サイズ変更不可)。
+- **`restorable`** (既定 true): false + `maximized` で**最大化のまま固定**します (タイトルバーのダブルクリック/ドラッグで復元せず、復元ボタンは非活性)。
+- Storybook: `Components/Window` に `CloseOnly` / `MaximizeDisabled` / `MinimizeHidden` / `NotResizable` / `MaximizedFixed`。
+
 ## [0.4.8] - 2026-10-16
 
 ### Changed

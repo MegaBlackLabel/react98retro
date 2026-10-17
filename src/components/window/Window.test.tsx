@@ -348,6 +348,215 @@ describe('Window', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  describe('title bar control flags', () => {
+    it('hides the Minimize/Maximize buttons passed from Window', () => {
+      render(<Window title="Test" minimizable={false} maximizable={false} />);
+      expect(screen.queryByRole('button', { name: 'Minimize' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Maximize' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    });
+
+    it('hides the Close button when closable=false', () => {
+      render(<Window title="Test" closable={false} />);
+      expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Minimize' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Maximize' })).toBeInTheDocument();
+    });
+
+    it('forwards the disabled flags to the title bar buttons', () => {
+      render(<Window title="Test" minimizeDisabled maximizeDisabled closeDisabled />);
+      expect(screen.getByRole('button', { name: 'Minimize' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Maximize' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
+    });
+
+    it('keeps the Maximize button disabled while minimized', () => {
+      render(<Window title="Test" minimized />);
+      expect(screen.getByRole('button', { name: 'Maximize' })).toBeDisabled();
+    });
+
+    it('keeps the title bar control flags off the DOM node', () => {
+      render(
+        <Window
+          title="Test"
+          data-testid="explorer-window"
+          minimizable={false}
+          maximizable={false}
+          closable={false}
+          minimizeDisabled
+          maximizeDisabled
+          closeDisabled
+        />,
+      );
+      const windowEl = screen.getByTestId('explorer-window');
+      expect(windowEl).not.toHaveAttribute('minimizable');
+      expect(windowEl).not.toHaveAttribute('maximizable');
+      expect(windowEl).not.toHaveAttribute('closable');
+      expect(windowEl).not.toHaveAttribute('minimizeDisabled');
+      expect(windowEl).not.toHaveAttribute('maximizeDisabled');
+      expect(windowEl).not.toHaveAttribute('closeDisabled');
+    });
+
+    // closable=false は「閉じるボタンを描かない」だけで、Escape の閉じる導線は残す
+    it('still closes a modal window with Escape when closable=false', () => {
+      const onClose = vi.fn();
+      render(<Window title="Confirm" modal closable={false} onClose={onClose} />);
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('resizable flag', () => {
+    it('renders all eight resize handles by default', () => {
+      const { container } = render(<Window title="Test" width={400} height={300} />);
+      expect(container.querySelectorAll(`.${styles.resizeHandle}`)).toHaveLength(8);
+    });
+
+    it('does not render resize handles when resizable=false', () => {
+      const { container } = render(
+        <Window title="Test" width={400} height={300} resizable={false} />,
+      );
+      expect(container.querySelectorAll(`.${styles.resizeHandle}`)).toHaveLength(0);
+    });
+
+    // サイズ グリップは se ハンドルの見える版なので、resizable=false では描かない
+    it('does not render the status bar size grip when resizable=false', () => {
+      const { container } = render(
+        <Window title="Test" resizable={false} statusBar={<div>Status content</div>} />,
+      );
+      expect(container.querySelector(`.${styles.sizeGrip}`)).toBeNull();
+    });
+
+    it('keeps the window size fixed when the pointer is pressed and moved', () => {
+      const { container } = render(
+        <Window title="Test" width={400} height={300} resizable={false} />,
+      );
+      const windowEl = container.firstChild as HTMLElement;
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        windowEl.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 600, clientY: 500, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 600, clientY: 500, pointerId: 1 }));
+      });
+
+      expect(windowEl.style.width).toBe('400px');
+      expect(windowEl.style.height).toBe('300px');
+    });
+
+    it('keeps the resizable flag off the DOM node', () => {
+      render(<Window title="Test" data-testid="explorer-window" resizable={false} />);
+      expect(screen.getByTestId('explorer-window')).not.toHaveAttribute('resizable');
+    });
+  });
+
+  describe('maximized lock (restorable=false)', () => {
+    it('stays maximized when the title bar is double-clicked', () => {
+      const onRestore = vi.fn();
+      const onMaximize = vi.fn();
+      const { container } = render(
+        <Window
+          title="Test"
+          width={400}
+          height={300}
+          maximized
+          restorable={false}
+          onRestore={onRestore}
+          onMaximize={onMaximize}
+        />,
+      );
+      const windowEl = container.firstChild as HTMLElement;
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+
+      fireEvent.doubleClick(titleBar);
+
+      expect(onRestore).not.toHaveBeenCalled();
+      expect(onMaximize).not.toHaveBeenCalled();
+      expect(windowEl.style.width).toBe('100vw');
+      expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
+    });
+
+    it('keeps the Restore button disabled', () => {
+      render(<Window title="Test" maximized restorable={false} />);
+      expect(screen.getByRole('button', { name: 'Restore' })).toBeDisabled();
+    });
+
+    it('does not move when the title bar is dragged', () => {
+      const { container } = render(
+        <Window title="Test" width={400} height={300} maximized restorable={false} />,
+      );
+      const windowEl = container.firstChild as HTMLElement;
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+      titleBar.setPointerCapture = vi.fn();
+      titleBar.releasePointerCapture = vi.fn();
+
+      act(() => {
+        titleBar.dispatchEvent(
+          createPointerEvent('pointerdown', { clientX: 100, clientY: 100, pointerId: 1, bubbles: true }),
+        );
+        window.dispatchEvent(createPointerEvent('pointermove', { clientX: 300, clientY: 300, pointerId: 1 }));
+        window.dispatchEvent(createPointerEvent('pointerup', { clientX: 300, clientY: 300, pointerId: 1 }));
+      });
+
+      expect(titleBar.setPointerCapture).not.toHaveBeenCalled();
+      expect(windowEl.style.top).toBe('0px');
+      expect(windowEl.style.left).toBe('0px');
+      expect(windowEl.style.width).toBe('100vw');
+    });
+
+    it('restores on title bar double-click while maximized by default', async () => {
+      const onRestore = vi.fn();
+      const { container } = render(
+        <Window title="Test" width={400} height={300} maximized onRestore={onRestore} />,
+      );
+      const windowEl = container.firstChild as HTMLElement;
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+
+      fireEvent.doubleClick(titleBar);
+
+      await waitFor(() => {
+        expect(onRestore).toHaveBeenCalledOnce();
+        expect(windowEl.style.width).toBe('400px');
+        expect(windowEl.style.height).toBe('300px');
+      });
+    });
+
+    // restorable=false は「最大化のまま固定」。最大化そのものは禁止しない
+    it('still maximizes a non-maximized window and then keeps it maximized', () => {
+      const onMaximize = vi.fn();
+      const onRestore = vi.fn();
+      const { container } = render(
+        <Window
+          title="Test"
+          width={400}
+          height={300}
+          restorable={false}
+          onMaximize={onMaximize}
+          onRestore={onRestore}
+        />,
+      );
+      const windowEl = container.firstChild as HTMLElement;
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+
+      fireEvent.doubleClick(titleBar);
+      expect(onMaximize).toHaveBeenCalledOnce();
+      expect(windowEl.style.width).toBe('100vw');
+
+      fireEvent.doubleClick(titleBar);
+      expect(onRestore).not.toHaveBeenCalled();
+      expect(windowEl.style.width).toBe('100vw');
+    });
+
+    it('keeps the restorable flag off the DOM node', () => {
+      render(<Window title="Test" data-testid="explorer-window" restorable={false} />);
+      expect(screen.getByTestId('explorer-window')).not.toHaveAttribute('restorable');
+    });
+  });
+
   describe('snap commit behavior', () => {
     beforeEach(() => {
       Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
@@ -826,6 +1035,23 @@ describe('Window', () => {
 
       fireEvent.doubleClick(titleBar);
       expect(context.maximize).toHaveBeenCalledWith('win-1');
+    });
+
+    it('does not restore a managed window through the manager when restorable=false', () => {
+      const context = createMockContext({
+        windows: { 'win-1': { id: 'win-1', minimized: false, maximized: true, isSnapped: false, zIndex: 1 } },
+      });
+      render(
+        <WindowManagerContext.Provider value={context}>
+          <Window title="Test" windowId="win-1" maximized restorable={false} />
+        </WindowManagerContext.Provider>
+      );
+      const titleBar = screen.getByText('Test').closest('.title-bar') as HTMLElement;
+
+      fireEvent.doubleClick(titleBar);
+      fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+
+      expect(context.restore).not.toHaveBeenCalled();
     });
 
     it('updates the taskbar title without unregistering when the title changes', () => {
